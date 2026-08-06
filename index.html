@@ -1,0 +1,937 @@
+<title>Deutsch-Trainer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#f3f7f6; --card:#ffffff; --ink:#1e2b29; --muted:#5c6f6c;
+    --accent:#0e8a7f; --accent-ink:#ffffff; --line:#dbe6e4;
+    --der:#3b6fd4; --die:#d94f63; --das:#2e9247; --none:#7a6bbf;
+    --ok:#2e9247; --bad:#c94848; --chip:#e7efee;
+    --shadow:0 2px 10px rgba(30,60,55,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#131d1b; --card:#1c2926; --ink:#e7efed; --muted:#93a5a2;
+      --accent:#3fbfb2; --accent-ink:#0d1715; --line:#2c3c39;
+      --der:#7ba3f0; --die:#ef8494; --das:#6fc487; --none:#a99cf0;
+      --ok:#6fc487; --bad:#e88080; --chip:#243330;
+      --shadow:0 2px 10px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#131d1b; --card:#1c2926; --ink:#e7efed; --muted:#93a5a2;
+    --accent:#3fbfb2; --accent-ink:#0d1715; --line:#2c3c39;
+    --der:#7ba3f0; --die:#ef8494; --das:#6fc487; --none:#a99cf0;
+    --ok:#6fc487; --bad:#e88080; --chip:#243330;
+    --shadow:0 2px 10px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#f3f7f6; --card:#ffffff; --ink:#1e2b29; --muted:#5c6f6c;
+    --accent:#0e8a7f; --accent-ink:#ffffff; --line:#dbe6e4;
+    --der:#3b6fd4; --die:#d94f63; --das:#2e9247; --none:#7a6bbf;
+    --ok:#2e9247; --bad:#c94848; --chip:#e7efee;
+    --shadow:0 2px 10px rgba(30,60,55,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    line-height:1.45; -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:20px 16px 56px}
+  .kicker{font-size:.78rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:6px}
+  h1{font-size:1.55rem; line-height:1.2; margin:0 0 4px; text-wrap:balance}
+  .sub{color:var(--muted); margin:0 0 18px; font-size:.95rem}
+
+  .lcards{display:flex; flex-direction:column; gap:12px}
+  .lcard{
+    display:block; width:100%; text-align:left; background:var(--card);
+    border:1px solid var(--line); border-radius:16px; padding:16px;
+    box-shadow:var(--shadow); cursor:pointer; font:inherit; color:inherit;
+  }
+  .lcard .lt{font-size:1.15rem; font-weight:700; margin-bottom:2px}
+  .lcard .ls{color:var(--muted); font-size:.9rem}
+  .lcard .lb{margin-top:8px; display:inline-block; background:var(--chip); border-radius:999px; padding:4px 12px; font-size:.83rem}
+
+  .backrow{display:flex; align-items:center; gap:10px; margin-bottom:14px}
+  .back{
+    border:1px solid var(--line); background:var(--card); color:var(--ink);
+    border-radius:999px; padding:8px 16px; font-size:.95rem; font-weight:600; cursor:pointer;
+  }
+  .ltitle{font-weight:700; font-size:1.1rem}
+
+  .tabs{display:flex; gap:8px; margin-bottom:20px}
+  .tab{
+    flex:1; padding:11px 8px; border:1px solid var(--line); border-radius:12px;
+    background:var(--card); color:var(--ink); font-size:1rem; font-weight:600;
+    cursor:pointer; transition:background .15s;
+  }
+  .tab[aria-selected="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+  .tab:focus-visible,button:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+  section[hidden]{display:none}
+
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:.85rem; color:var(--muted); margin-bottom:14px}
+  .legend b{font-weight:700}
+  .b-der{color:var(--der)} .b-die{color:var(--die)} .b-das{color:var(--das)}
+
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px}
+  .chip{
+    padding:7px 14px; border-radius:999px; border:1px solid var(--line);
+    background:var(--chip); color:var(--ink); font-size:.9rem; cursor:pointer;
+  }
+  .chip[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+
+  .card3d{perspective:1200px; margin-bottom:14px}
+  .flash{
+    position:relative; width:100%; min-height:230px; border:none; padding:0;
+    background:transparent; cursor:pointer; font:inherit; color:inherit;
+    transform-style:preserve-3d; transition:transform .45s;
+  }
+  .flash.flipped{transform:rotateY(180deg)}
+  @media (prefers-reduced-motion: reduce){
+    .flash{transition:none}
+  }
+  .face{
+    position:absolute; inset:0; display:flex; flex-direction:column; gap:10px;
+    align-items:center; justify-content:center; padding:24px;
+    background:var(--card); border:1px solid var(--line); border-radius:18px;
+    box-shadow:var(--shadow); backface-visibility:hidden;
+  }
+  .face.back{transform:rotateY(180deg)}
+  .art{font-size:1.15rem; font-weight:700}
+  .word{font-size:2rem; font-weight:700; text-align:center; line-height:1.15}
+  .hint{color:var(--muted); font-size:.85rem}
+  .ru{font-size:1.7rem; font-weight:700; text-align:center}
+  .de-small{color:var(--muted); font-size:1rem}
+
+  .row{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:8px}
+  .counter{color:var(--muted); font-variant-numeric:tabular-nums; font-size:.95rem}
+  .btn{
+    padding:12px 20px; border-radius:12px; border:1px solid var(--line);
+    background:var(--card); color:var(--ink); font-size:1.05rem; font-weight:600; cursor:pointer;
+  }
+  .btn.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+  .btn.big{width:100%; padding:15px}
+  .speak{
+    border:1px solid var(--line); background:var(--chip); color:var(--ink);
+    border-radius:999px; width:46px; height:46px; font-size:1.25rem; cursor:pointer; flex:none;
+  }
+
+  .plist{display:flex; flex-direction:column; gap:10px}
+  .pitem{
+    display:flex; gap:12px; align-items:center; background:var(--card);
+    border:1px solid var(--line); border-radius:14px; padding:13px 14px; box-shadow:var(--shadow);
+  }
+  .ptxt{flex:1; min-width:0}
+  .pde{font-weight:700; font-size:1.06rem}
+  .pru{color:var(--muted); font-size:.93rem; margin-top:2px}
+
+  .q-progress{height:8px; background:var(--chip); border-radius:99px; margin-bottom:16px; overflow:hidden}
+  .q-bar{height:100%; width:0%; background:var(--accent); border-radius:99px; transition:width .25s}
+  .q-word{font-size:1.7rem; font-weight:700; text-align:center; margin:10px 0 4px}
+  .q-task{text-align:center; color:var(--muted); margin:0 0 16px; font-size:.92rem}
+  .opts{display:flex; flex-direction:column; gap:10px}
+  .opt{
+    padding:14px; border-radius:12px; border:1px solid var(--line); background:var(--card);
+    font-size:1.05rem; font-weight:600; color:var(--ink); cursor:pointer; text-align:center;
+  }
+  .opt.ok{background:var(--ok); border-color:var(--ok); color:#fff}
+  .opt.bad{background:var(--bad); border-color:var(--bad); color:#fff}
+  .opt:disabled{cursor:default; opacity:.92}
+  .center{text-align:center}
+  .score-big{font-size:2.6rem; font-weight:700; margin:8px 0}
+  .msg{font-size:1.1rem; margin:0 0 6px}
+  .best{color:var(--muted); font-size:.9rem; margin-bottom:18px}
+  .footer-note{margin-top:34px; color:var(--muted); font-size:.83rem; text-align:center}
+
+  .sect-h{margin:26px 0 6px; font-size:1.05rem; font-weight:700}
+  .dlg{display:flex; flex-direction:column; gap:10px; margin-bottom:16px}
+  .bub{max-width:88%; padding:11px 14px; border-radius:16px; box-shadow:var(--shadow); font-size:1.02rem}
+  .bub .who{font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:3px}
+  .bub.partner{align-self:flex-start; background:var(--card); border:1px solid var(--line); border-bottom-left-radius:4px}
+  .bub.me{align-self:flex-end; background:var(--accent); color:var(--accent-ink); border-bottom-right-radius:4px}
+  .bub.fb{align-self:stretch; max-width:100%; background:var(--chip); border:1px dashed var(--line)}
+  .bub .tr{color:var(--muted); font-size:.88rem; margin-top:4px}
+  .inline-btn{border:none; background:none; color:var(--accent); font-size:.88rem; cursor:pointer; padding:2px 4px; font-weight:600}
+  .row2{display:flex; gap:4px; margin-top:6px; flex-wrap:wrap}
+  .task{background:var(--chip); border-radius:12px; padding:10px 14px; font-size:.95rem; margin-bottom:12px}
+  .microw{display:flex; gap:12px; align-items:center; justify-content:center; margin:6px 0 4px}
+  .mic{
+    width:84px; height:84px; border-radius:50%; border:none; cursor:pointer;
+    background:var(--accent); color:var(--accent-ink); font-size:2rem; box-shadow:var(--shadow);
+  }
+  .mic.listening{animation:pulse 1s infinite; background:var(--bad)}
+  @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){ .mic.listening{animation:none} }
+  .micstate{text-align:center; color:var(--muted); font-size:.9rem; min-height:1.3em; margin-bottom:10px}
+  .typerow{display:flex; gap:8px; margin-top:10px}
+  .typerow input{flex:1; min-width:0; padding:12px; border-radius:12px; border:1px solid var(--line); background:var(--card); color:var(--ink); font-size:1rem}
+  .missing{display:inline-block; background:var(--card); border:1px solid var(--bad); color:var(--bad); border-radius:999px; padding:2px 10px; margin:2px 3px 0 0; font-size:.9rem; font-weight:600}
+  .dots{display:flex; gap:6px; margin-bottom:14px}
+  .dot{width:10px; height:10px; border-radius:50%; background:var(--chip); border:1px solid var(--line)}
+  .dot.done{background:var(--ok); border-color:var(--ok)}
+  .dot.cur{background:var(--accent); border-color:var(--accent)}
+</style>
+
+<div class="wrap">
+
+  <section id="view-home">
+    <div class="kicker">Deutsch-Trainer</div>
+    <h1>Немецкий шаг за шагом</h1>
+    <p class="sub">Выбери урок. В каждом: слова с озвучкой 🔊, фразы и игра. Нажимай на динамик — и повторяй вслух!</p>
+    <div class="lcards" id="lessonCards"></div>
+    <div class="sect-h">🎤 Разговор — тренировка речи</div>
+    <p class="sub">Собеседник говорит по-немецки, ты отвечаешь вслух в микрофон. Приложение покажет, что получилось, и правильный вариант.</p>
+    <div class="lcards" id="dialogCards"></div>
+    <p class="footer-note">По учебнику Menschen A1.1 + фразы для школы · для занятий по 15–20 минут в день</p>
+  </section>
+
+  <section id="view-lesson" hidden>
+    <div class="backrow">
+      <button class="back" onclick="goHome()">← Уроки</button>
+      <span class="ltitle" id="lessonTitle"></span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" id="tab-words" role="tab" aria-selected="true" onclick="showTab('words')">Слова</button>
+      <button class="tab" id="tab-phrases" role="tab" aria-selected="false" onclick="showTab('phrases')">Фразы</button>
+      <button class="tab" id="tab-quiz" role="tab" aria-selected="false" onclick="showTab('quiz')">Игра</button>
+    </nav>
+
+    <section id="panel-words" role="tabpanel" aria-labelledby="tab-words">
+      <div class="legend">
+        <span><b class="b-der">der</b> — синий</span>
+        <span><b class="b-die">die</b> — красный</span>
+        <span><b class="b-das">das</b> — зелёный</span>
+      </div>
+      <div class="chips" id="catChips"></div>
+      <div class="row">
+        <span class="counter" id="wCounter"></span>
+        <span class="hint">Нажми на карточку — увидишь перевод</span>
+      </div>
+      <div class="card3d">
+        <button class="flash" id="flashCard" aria-live="polite">
+          <span class="face front">
+            <span class="art" id="fArt"></span>
+            <span class="word" id="fWord"></span>
+            <span class="hint">🔊 внизу — послушать</span>
+          </span>
+          <span class="face back">
+            <span class="ru" id="fRu"></span>
+            <span class="de-small" id="fDe"></span>
+          </span>
+        </button>
+      </div>
+      <div class="row">
+        <button class="speak" id="btnSpeakWord" aria-label="Послушать слово">🔊</button>
+        <button class="btn" onclick="prevWord()">← Назад</button>
+        <button class="btn primary" onclick="nextWord()">Дальше →</button>
+      </div>
+    </section>
+
+    <section id="panel-phrases" role="tabpanel" aria-labelledby="tab-phrases" hidden>
+      <p class="sub" id="phraseIntro"></p>
+      <div class="plist" id="phraseList"></div>
+    </section>
+
+    <section id="panel-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
+      <div id="qStart" class="center">
+        <p class="msg">10 вопросов по словам урока.<br>Готова?</p>
+        <p class="best" id="bestLine"></p>
+        <button class="btn primary big" onclick="startQuiz()">Начать игру</button>
+      </div>
+      <div id="qGame" hidden>
+        <div class="q-progress"><div class="q-bar" id="qBar"></div></div>
+        <p class="counter center" id="qCounter"></p>
+        <p class="q-word" id="qWord"></p>
+        <p class="q-task" id="qTask"></p>
+        <div class="opts" id="qOpts"></div>
+      </div>
+      <div id="qEnd" class="center" hidden>
+        <p class="score-big" id="qScore"></p>
+        <p class="msg" id="qMsg"></p>
+        <p class="best" id="bestLine2"></p>
+        <button class="btn primary big" onclick="startQuiz()">Ещё раз!</button>
+      </div>
+    </section>
+  </section>
+
+  <section id="view-dialog" hidden>
+    <div class="backrow">
+      <button class="back" onclick="goHome()">← Уроки</button>
+      <span class="ltitle" id="dlgTitle"></span>
+    </div>
+    <div class="dots" id="dlgDots"></div>
+    <div class="dlg" id="dlgLog"></div>
+    <div class="task" id="dlgTask" hidden></div>
+    <div id="dlgControls" hidden>
+      <div class="microw"><button class="mic" id="btnMic" aria-label="Нажми и говори">🎤</button></div>
+      <p class="micstate" id="micState">Нажми на микрофон и скажи ответ по-немецки</p>
+      <div class="row" style="justify-content:center">
+        <button class="btn" id="btnHint">💡 Подсказка</button>
+        <button class="btn" id="btnType">⌨ Напечатать</button>
+      </div>
+      <div class="typerow" id="typeRow" hidden>
+        <input id="typeInput" lang="de" autocomplete="off" placeholder="Напиши ответ по-немецки…">
+        <button class="btn primary" id="btnCheckTyped">OK</button>
+      </div>
+    </div>
+    <div class="row" style="justify-content:center" id="dlgNextRow" hidden>
+      <button class="btn" id="btnRetry">🎤 Ещё раз</button>
+      <button class="btn primary" id="btnNext">Дальше →</button>
+    </div>
+    <div class="center" id="dlgEnd" hidden>
+      <p class="score-big" id="dlgScore"></p>
+      <p class="msg" id="dlgMsg"></p>
+      <button class="btn primary big" id="btnDlgAgain">Пройти ещё раз</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const LESSONS = [
+  {
+    id:"schule",
+    title:"Урок 1 · Школа",
+    subtitle:"Фразы выживания для класса + школьные слова",
+    badge:"начни отсюда",
+    phraseIntro:"Это твоя «скорая помощь» на уроке. Выучи их первыми — и не бойся поднимать руку.",
+    cats:[
+      {id:"all", label:"Все"},
+      {id:"things", label:"Школьные вещи"},
+      {id:"subjects", label:"Предметы"},
+      {id:"school", label:"В школе"}
+    ],
+    words:[
+      {de:"Stift", art:"der", ru:"ручка", cat:"things"},
+      {de:"Bleistift", art:"der", ru:"карандаш", cat:"things"},
+      {de:"Heft", art:"das", ru:"тетрадь", cat:"things"},
+      {de:"Buch", art:"das", ru:"книга", cat:"things"},
+      {de:"Mäppchen", art:"das", ru:"пенал", cat:"things"},
+      {de:"Rucksack", art:"der", ru:"рюкзак", cat:"things"},
+      {de:"Lineal", art:"das", ru:"линейка", cat:"things"},
+      {de:"Radiergummi", art:"der", ru:"ластик", cat:"things"},
+      {de:"Schere", art:"die", ru:"ножницы", cat:"things"},
+      {de:"Kleber", art:"der", ru:"клей", cat:"things"},
+      {de:"Tafel", art:"die", ru:"доска", cat:"things"},
+      {de:"Stundenplan", art:"der", ru:"расписание уроков", cat:"things"},
+      {de:"Mathe", art:"", ru:"математика", cat:"subjects"},
+      {de:"Deutsch", art:"", ru:"немецкий язык", cat:"subjects"},
+      {de:"Englisch", art:"", ru:"английский язык", cat:"subjects"},
+      {de:"Sport", art:"", ru:"физкультура", cat:"subjects"},
+      {de:"Kunst", art:"", ru:"рисование, искусство", cat:"subjects"},
+      {de:"Musik", art:"", ru:"музыка", cat:"subjects"},
+      {de:"Biologie", art:"", ru:"биология", cat:"subjects"},
+      {de:"Erdkunde", art:"", ru:"география", cat:"subjects"},
+      {de:"Geschichte", art:"", ru:"история", cat:"subjects"},
+      {de:"Informatik", art:"", ru:"информатика", cat:"subjects"},
+      {de:"Klasse", art:"die", ru:"класс", cat:"school"},
+      {de:"Pause", art:"die", ru:"перемена", cat:"school"},
+      {de:"Hausaufgabe", art:"die", ru:"домашнее задание", cat:"school"},
+      {de:"Note", art:"die", ru:"оценка", cat:"school"},
+      {de:"Lehrer", art:"der", ru:"учитель", cat:"school"},
+      {de:"Lehrerin", art:"die", ru:"учительница", cat:"school"},
+      {de:"Mensa", art:"die", ru:"школьная столовая", cat:"school"},
+      {de:"Schulhof", art:"der", ru:"школьный двор", cat:"school"}
+    ],
+    phrases:[
+      {de:"Wie bitte?", ru:"Что, простите? (переспросить)"},
+      {de:"Ich verstehe das nicht.", ru:"Я это не понимаю."},
+      {de:"Können Sie das bitte wiederholen?", ru:"Повторите, пожалуйста."},
+      {de:"Können Sie bitte langsamer sprechen?", ru:"Говорите, пожалуйста, медленнее."},
+      {de:"Was bedeutet das?", ru:"Что это значит?"},
+      {de:"Wie sagt man das auf Deutsch?", ru:"Как это сказать по-немецки?"},
+      {de:"Ich habe eine Frage.", ru:"У меня вопрос."},
+      {de:"Welche Seite, bitte?", ru:"Какая страница?"},
+      {de:"Darf ich auf die Toilette gehen?", ru:"Можно выйти в туалет?"},
+      {de:"Kannst du mir helfen?", ru:"Ты можешь мне помочь? (однокласснику)"},
+      {de:"Ich bin fertig.", ru:"Я закончила."},
+      {de:"Entschuldigung, ich bin neu hier.", ru:"Извините, я здесь новенькая."}
+    ]
+  },
+  {
+    id:"hallo",
+    title:"Урок 2 · Знакомство",
+    subtitle:"Menschen A1.1, Lektion 1: приветствия, «как тебя зовут», числа 0–10",
+    badge:"Menschen · Lektion 1",
+    phraseIntro:"Мини-диалог знакомства. Выучи — и сможешь представиться любому однокласснику.",
+    cats:[
+      {id:"all", label:"Все"},
+      {id:"greet", label:"Приветствия"},
+      {id:"basics", label:"Первые слова"},
+      {id:"numbers", label:"Числа 0–10"}
+    ],
+    words:[
+      {de:"Hallo", art:"", ru:"привет", cat:"greet"},
+      {de:"Guten Morgen", art:"", ru:"доброе утро", cat:"greet"},
+      {de:"Guten Tag", art:"", ru:"добрый день", cat:"greet"},
+      {de:"Guten Abend", art:"", ru:"добрый вечер", cat:"greet"},
+      {de:"Gute Nacht", art:"", ru:"спокойной ночи", cat:"greet"},
+      {de:"Tschüs", art:"", ru:"пока", cat:"greet"},
+      {de:"Auf Wiedersehen", art:"", ru:"до свидания", cat:"greet"},
+      {de:"Bis morgen", art:"", ru:"до завтра", cat:"greet"},
+      {de:"ja", art:"", ru:"да", cat:"basics"},
+      {de:"nein", art:"", ru:"нет", cat:"basics"},
+      {de:"danke", art:"", ru:"спасибо", cat:"basics"},
+      {de:"bitte", art:"", ru:"пожалуйста", cat:"basics"},
+      {de:"Entschuldigung", art:"die", ru:"извините; извинение", cat:"basics"},
+      {de:"Name", art:"der", ru:"имя, фамилия", cat:"basics"},
+      {de:"Land", art:"das", ru:"страна", cat:"basics"},
+      {de:"Stadt", art:"die", ru:"город", cat:"basics"},
+      {de:"Deutschland", art:"", ru:"Германия", cat:"basics"},
+      {de:"Ukraine", art:"die", ru:"Украина", cat:"basics"},
+      {de:"null", art:"", ru:"0", cat:"numbers"},
+      {de:"eins", art:"", ru:"1", cat:"numbers"},
+      {de:"zwei", art:"", ru:"2", cat:"numbers"},
+      {de:"drei", art:"", ru:"3", cat:"numbers"},
+      {de:"vier", art:"", ru:"4", cat:"numbers"},
+      {de:"fünf", art:"", ru:"5", cat:"numbers"},
+      {de:"sechs", art:"", ru:"6", cat:"numbers"},
+      {de:"sieben", art:"", ru:"7", cat:"numbers"},
+      {de:"acht", art:"", ru:"8", cat:"numbers"},
+      {de:"neun", art:"", ru:"9", cat:"numbers"},
+      {de:"zehn", art:"", ru:"10", cat:"numbers"}
+    ],
+    phrases:[
+      {de:"Hallo, ich bin Anna.", ru:"Привет, я Анна."},
+      {de:"Wie heißt du?", ru:"Как тебя зовут?"},
+      {de:"Ich heiße Sofia.", ru:"Меня зовут София."},
+      {de:"Wer bist du?", ru:"Кто ты?"},
+      {de:"Woher kommst du?", ru:"Откуда ты?"},
+      {de:"Ich komme aus der Ukraine.", ru:"Я из Украины."},
+      {de:"Wo wohnst du?", ru:"Где ты живёшь?"},
+      {de:"Ich wohne in Mülheim.", ru:"Я живу в Мюльхайме."},
+      {de:"Wie geht's?", ru:"Как дела?"},
+      {de:"Danke, gut!", ru:"Спасибо, хорошо!"},
+      {de:"Freut mich!", ru:"Приятно познакомиться!"},
+      {de:"Wie alt bist du? — Ich bin zwölf.", ru:"Сколько тебе лет? — Мне двенадцать."}
+    ]
+  }
+];
+const ART_COLOR = {der:"var(--der)", die:"var(--die)", das:"var(--das)"};
+
+let deVoice = null;
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  deVoice = vs.find(v=>v.lang && v.lang.toLowerCase().startsWith("de")) || null;
+}
+if ("speechSynthesis" in window){
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+function speak(text){
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "de-DE";
+  if (deVoice) u.voice = deVoice;
+  u.rate = 0.85;
+  speechSynthesis.speak(u);
+}
+
+let L = LESSONS[0];
+function bestKey(){ return "dt-best-"+L.id; }
+
+function renderHome(){
+  const box = document.getElementById("lessonCards");
+  box.innerHTML = "";
+  LESSONS.forEach(les=>{
+    const b = document.createElement("button");
+    b.className = "lcard";
+    const best = localStorage.getItem("dt-best-"+les.id);
+    b.innerHTML = '<div class="lt"></div><div class="ls"></div><span class="lb"></span>';
+    b.querySelector(".lt").textContent = les.title;
+    b.querySelector(".ls").textContent = les.subtitle + " · " + les.words.length + " слов · " + les.phrases.length + " фраз";
+    b.querySelector(".lb").textContent = best ? ("🏆 рекорд в игре: "+best+"/10") : les.badge;
+    b.onclick = ()=>openLesson(les);
+    box.appendChild(b);
+  });
+  const dbox = document.getElementById("dialogCards");
+  dbox.innerHTML = "";
+  DIALOGS.forEach(d=>{
+    const b = document.createElement("button");
+    b.className = "lcard";
+    const done = localStorage.getItem("dt-dlg-"+d.id);
+    b.innerHTML = '<div class="lt"></div><div class="ls"></div><span class="lb"></span>';
+    b.querySelector(".lt").textContent = d.icon+" "+d.title;
+    b.querySelector(".ls").textContent = d.subtitle + " · " + d.steps.length + " реплик";
+    b.querySelector(".lb").textContent = done ? ("🏆 лучший результат: "+done+"/"+d.steps.length+" с первого раза") : "🎙 говорим вслух";
+    b.onclick = ()=>openDialog(d);
+    dbox.appendChild(b);
+  });
+}
+function openLesson(les){
+  L = les; cat = "all"; pool = L.words.slice(); idx = 0;
+  document.getElementById("view-home").hidden = true;
+  document.getElementById("view-lesson").hidden = false;
+  document.getElementById("lessonTitle").textContent = L.title;
+  document.getElementById("phraseIntro").textContent = L.phraseIntro;
+  renderChips(); renderWord(); renderPhrases(); resetQuizUI(); showBest();
+  showTab("words");
+  window.scrollTo(0,0);
+}
+function goHome(){
+  stopListen();
+  document.getElementById("view-lesson").hidden = true;
+  document.getElementById("view-dialog").hidden = true;
+  document.getElementById("view-home").hidden = false;
+  renderHome();
+  window.scrollTo(0,0);
+}
+function showTab(name){
+  ["words","phrases","quiz"].forEach(t=>{
+    document.getElementById("panel-"+t).hidden = (t!==name);
+    document.getElementById("tab-"+t).setAttribute("aria-selected", t===name ? "true":"false");
+  });
+}
+
+let cat = "all", pool = [], idx = 0;
+const flash = document.getElementById("flashCard");
+function renderChips(){
+  const box = document.getElementById("catChips");
+  box.innerHTML = "";
+  L.cats.forEach(c=>{
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = c.label;
+    b.setAttribute("aria-pressed", c.id===cat ? "true":"false");
+    b.onclick = ()=>{ cat=c.id; pool = cat==="all" ? L.words.slice() : L.words.filter(w=>w.cat===cat); idx=0; renderChips(); renderWord(); };
+    box.appendChild(b);
+  });
+}
+function renderWord(){
+  const w = pool[idx];
+  flash.classList.remove("flipped");
+  document.getElementById("fArt").textContent = w.art;
+  document.getElementById("fArt").style.color = w.art ? ART_COLOR[w.art] : "var(--none)";
+  document.getElementById("fWord").textContent = w.de;
+  document.getElementById("fRu").textContent = w.ru;
+  document.getElementById("fDe").textContent = (w.art ? w.art+" " : "") + w.de;
+  document.getElementById("wCounter").textContent = (idx+1) + " / " + pool.length;
+}
+flash.onclick = ()=> flash.classList.toggle("flipped");
+document.getElementById("btnSpeakWord").onclick = ()=>{
+  const w = pool[idx];
+  speak((w.art ? w.art+" " : "") + w.de);
+};
+function nextWord(){ idx = (idx+1) % pool.length; renderWord(); }
+function prevWord(){ idx = (idx-1+pool.length) % pool.length; renderWord(); }
+
+function renderPhrases(){
+  const pl = document.getElementById("phraseList");
+  pl.innerHTML = "";
+  L.phrases.forEach(p=>{
+    const d = document.createElement("div");
+    d.className = "pitem";
+    const t = document.createElement("div");
+    t.className = "ptxt";
+    t.innerHTML = '<div class="pde"></div><div class="pru"></div>';
+    t.querySelector(".pde").textContent = p.de;
+    t.querySelector(".pru").textContent = p.ru;
+    const s = document.createElement("button");
+    s.className = "speak";
+    s.textContent = "🔊";
+    s.setAttribute("aria-label","Послушать фразу");
+    s.onclick = ()=>speak(p.de);
+    d.appendChild(t); d.appendChild(s);
+    pl.appendChild(d);
+  });
+}
+
+let quiz = [], qi = 0, score = 0;
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function showBest(){
+  const b = localStorage.getItem(bestKey());
+  const t = b ? "Твой рекорд: "+b+" из 10" : "";
+  document.getElementById("bestLine").textContent = t;
+  document.getElementById("bestLine2").textContent = t;
+}
+function resetQuizUI(){
+  document.getElementById("qStart").hidden = false;
+  document.getElementById("qGame").hidden = true;
+  document.getElementById("qEnd").hidden = true;
+}
+function startQuiz(){
+  quiz = shuffle(L.words.slice()).slice(0,10).map(w=>({w, dir: Math.random()<0.5 ? "de2ru":"ru2de"}));
+  qi = 0; score = 0;
+  document.getElementById("qStart").hidden = true;
+  document.getElementById("qEnd").hidden = true;
+  document.getElementById("qGame").hidden = false;
+  renderQ();
+}
+function renderQ(){
+  const q = quiz[qi], w = q.w;
+  document.getElementById("qBar").style.width = (qi/10*100)+"%";
+  document.getElementById("qCounter").textContent = "Вопрос "+(qi+1)+" из 10 · Очки: "+score;
+  const sameCat = L.words.filter(x=>x.cat===w.cat && x.de!==w.de);
+  const others = shuffle(sameCat.slice()).slice(0,3);
+  while (others.length<3){
+    const r = L.words[Math.floor(Math.random()*L.words.length)];
+    if (r.de!==w.de && !others.includes(r)) others.push(r);
+  }
+  const opts = shuffle([w, ...others]);
+  const box = document.getElementById("qOpts");
+  box.innerHTML = "";
+  if (q.dir==="de2ru"){
+    document.getElementById("qWord").textContent = (w.art ? w.art+" " : "") + w.de;
+    document.getElementById("qTask").textContent = "Что это по-русски?";
+    opts.forEach(o=>box.appendChild(mkOpt(o.ru, o===w)));
+  } else {
+    document.getElementById("qWord").textContent = w.ru;
+    document.getElementById("qTask").textContent = "Как это по-немецки?";
+    opts.forEach(o=>box.appendChild(mkOpt((o.art ? o.art+" " : "")+o.de, o===w)));
+  }
+}
+function mkOpt(label, correct){
+  const b = document.createElement("button");
+  b.className = "opt";
+  b.textContent = label;
+  b.onclick = ()=>{
+    document.querySelectorAll(".opt").forEach(x=>x.disabled=true);
+    if (correct){ b.classList.add("ok"); score++; }
+    else {
+      b.classList.add("bad");
+      document.querySelectorAll(".opt").forEach(x=>{ if (x.dataset.ok==="1") x.classList.add("ok"); });
+    }
+    const w = quiz[qi].w;
+    speak((w.art ? w.art+" " : "") + w.de);
+    setTimeout(()=>{ qi++; if (qi<10) renderQ(); else endQuiz(); }, 1200);
+  };
+  if (correct) b.dataset.ok = "1";
+  return b;
+}
+function endQuiz(){
+  document.getElementById("qGame").hidden = true;
+  document.getElementById("qEnd").hidden = false;
+  document.getElementById("qScore").textContent = score + " / 10";
+  let m;
+  if (score>=9) m = "Super! Отлично! 🎉";
+  else if (score>=7) m = "Sehr gut! Почти всё знаешь!";
+  else if (score>=5) m = "Gut! Хорошее начало — повтори карточки и попробуй ещё.";
+  else m = "Ничего страшного! Посмотри карточки ещё раз — и всё получится.";
+  document.getElementById("qMsg").textContent = m;
+  const b = parseInt(localStorage.getItem(bestKey())||"0",10);
+  if (score>b) localStorage.setItem(bestKey(), String(score));
+  showBest();
+}
+
+const DIALOGS = [
+  {
+    id:"pause", icon:"👋", title:"Диалог 1 · Новенькая", partner:"Anna",
+    subtitle:"Перемена: одноклассница знакомится с тобой",
+    steps:[
+      {say:"Hallo! Ich bin Anna. Wie heißt du?", sayRu:"Привет! Я Анна. Как тебя зовут?",
+       task:"Скажи, как тебя зовут", note:"Вместо «Sofia» — своё имя!",
+       model:"Ich heiße Sofia.", modelRu:"Меня зовут София.",
+       slots:[["ich"],["heiße","heisse","bin","name"]]},
+      {say:"Woher kommst du?", sayRu:"Откуда ты?",
+       task:"Скажи, что ты из Украины",
+       model:"Ich komme aus der Ukraine.", modelRu:"Я из Украины.",
+       slots:[["komme","bin"],["ukraine"]]},
+      {say:"Oh, cool! Und wie alt bist du?", sayRu:"О, здорово! А сколько тебе лет?",
+       task:"Скажи, сколько тебе лет (12 = zwölf)",
+       model:"Ich bin zwölf Jahre alt.", modelRu:"Мне двенадцать лет.",
+       slots:[["ich bin","bin"],["zwölf","zwolf","12"]]},
+      {say:"Wohnst du hier in Mülheim?", sayRu:"Ты живёшь здесь, в Мюльхайме?",
+       task:"Ответь: «Да, я живу в Мюльхайме»",
+       model:"Ja, ich wohne in Mülheim.", modelRu:"Да, я живу в Мюльхайме.",
+       slots:[["ja"],["wohne"],["mülheim","mulheim","muelheim"]]},
+      {say:"Wir haben jetzt Mathe. Bis später!", sayRu:"У нас сейчас математика. До встречи!",
+       task:"Попрощайся",
+       model:"Tschüs! Bis später!", modelRu:"Пока! До встречи!",
+       slots:[["tschüs","tschuss","bis später","bis spater","auf wiedersehen","ciao"]]}
+    ]
+  },
+  {
+    id:"unterricht", icon:"🏫", title:"Диалог 2 · На уроке", partner:"Frau Müller",
+    subtitle:"Учительница что-то говорит — не бойся переспросить",
+    steps:[
+      {say:"Guten Morgen!", sayRu:"Доброе утро!",
+       task:"Поздоровайся",
+       model:"Guten Morgen!", modelRu:"Доброе утро!",
+       slots:[["guten morgen","hallo","guten tag"]]},
+      {say:"Öffnet bitte das Buch, Seite zwölf!", sayRu:"Откройте книгу, страница 12!",
+       task:"Ты не расслышала страницу — переспроси",
+       model:"Wie bitte? Welche Seite?", modelRu:"Что, простите? Какая страница?",
+       slots:[["wie bitte","welche seite","noch einmal","wiederholen"]]},
+      {say:"Seite zwölf.", sayRu:"Страница двенадцать.",
+       task:"Поблагодари",
+       model:"Danke!", modelRu:"Спасибо!",
+       slots:[["danke"]]},
+      {say:"Verstehst du die Aufgabe?", sayRu:"Ты понимаешь задание?",
+       task:"Скажи, что не понимаешь, и попроси повторить",
+       model:"Nein, ich verstehe das nicht. Können Sie das bitte wiederholen?", modelRu:"Нет, я не понимаю. Повторите, пожалуйста.",
+       slots:[["verstehe"],["nicht"],["wiederholen","erklären","erklaren","langsamer"]]},
+      {say:"Natürlich, kein Problem!", sayRu:"Конечно, без проблем!",
+       task:"Поблагодари",
+       model:"Danke schön!", modelRu:"Большое спасибо!",
+       slots:[["danke"]]}
+    ]
+  },
+  {
+    id:"mensa", icon:"🍕", title:"Диалог 3 · В столовой", partner:"Verkäuferin",
+    subtitle:"Mensa: закажи еду и заплати",
+    steps:[
+      {say:"Hallo! Was möchtest du?", sayRu:"Привет! Что ты хочешь?",
+       task:"Скажи: «Я хочу пиццу, пожалуйста»",
+       model:"Ich möchte eine Pizza, bitte.", modelRu:"Я хочу пиццу, пожалуйста.",
+       slots:[["möchte","mochte","hätte","hatte","nehme"],["pizza"],["bitte"]]},
+      {say:"Gern! Möchtest du Wasser oder Saft?", sayRu:"С удовольствием! Хочешь воду или сок?",
+       task:"Выбери: вода (Wasser) или сок (Saft)",
+       model:"Wasser, bitte.", modelRu:"Воду, пожалуйста.",
+       slots:[["wasser","saft"],["bitte"]]},
+      {say:"Das macht drei Euro.", sayRu:"С тебя три евро.",
+       task:"Скажи: «Вот, пожалуйста»",
+       model:"Hier, bitte.", modelRu:"Вот, пожалуйста.",
+       slots:[["hier","bitte"]]},
+      {say:"Danke! Guten Appetit!", sayRu:"Спасибо! Приятного аппетита!",
+       task:"Поблагодари",
+       model:"Danke schön!", modelRu:"Большое спасибо!",
+       slots:[["danke"]]}
+    ]
+  },
+  {
+    id:"hilfe", icon:"🤝", title:"Диалог 4 · Помоги мне!", partner:"Tim",
+    subtitle:"Попроси одноклассника помочь с домашкой",
+    steps:[
+      {say:"Hallo! Na, alles klar?", sayRu:"Привет! Ну, всё в порядке?",
+       task:"Поздоровайся и попроси помочь (helfen)",
+       model:"Hallo! Kannst du mir helfen?", modelRu:"Привет! Ты можешь мне помочь?",
+       slots:[["hallo","hi"],["helfen","hilf"]]},
+      {say:"Ja, klar! Was ist los?", sayRu:"Да, конечно! Что случилось?",
+       task:"Скажи: «Я не понимаю домашнее задание»",
+       model:"Ich verstehe die Hausaufgabe nicht.", modelRu:"Я не понимаю домашнее задание.",
+       slots:[["verstehe"],["hausaufgabe"],["nicht"]]},
+      {say:"Kein Problem, ich erkläre es dir!", sayRu:"Без проблем, я тебе объясню!",
+       task:"Поблагодари: «Спасибо! Ты супер!»",
+       model:"Danke! Du bist super!", modelRu:"Спасибо! Ты супер!",
+       slots:[["danke"],["super","toll","nett","lieb"]]}
+    ]
+  }
+];
+
+const PRAISE = ["Super! 🎉 Всё правильно!","Toll! 🌟 Отличный ответ!","Sehr gut! 💪 Именно так!","Prima! 🎉 Молодец!"];
+let D=null, di=0, firstTryPerfect=0, attempts=0, usedHelp=false;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec=null;
+
+function openDialog(d){
+  D=d; di=0; firstTryPerfect=0;
+  document.getElementById("view-home").hidden = true;
+  document.getElementById("view-dialog").hidden = false;
+  document.getElementById("dlgTitle").textContent = d.icon+" "+d.title+" · с "+d.partner;
+  document.getElementById("dlgLog").innerHTML = "";
+  document.getElementById("dlgEnd").hidden = true;
+  stepStart();
+  window.scrollTo(0,0);
+}
+function renderDots(){
+  const box = document.getElementById("dlgDots");
+  box.innerHTML = "";
+  D.steps.forEach((s,i)=>{
+    const el = document.createElement("span");
+    el.className = "dot" + (i<di ? " done" : i===di ? " cur" : "");
+    box.appendChild(el);
+  });
+}
+function stepStart(){
+  attempts=0; usedHelp=false;
+  renderDots();
+  const s = D.steps[di];
+  addPartnerBubble(s);
+  const t = document.getElementById("dlgTask");
+  t.hidden = false;
+  t.textContent = "Твоя задача: " + s.task + (s.note ? " · " + s.note : "");
+  document.getElementById("dlgControls").hidden = false;
+  document.getElementById("dlgNextRow").hidden = true;
+  document.getElementById("typeRow").hidden = true;
+  document.getElementById("micState").textContent = SR ? "Нажми на микрофон и скажи ответ по-немецки" : "Распознавание речи тут не работает — скажи вслух, потом напечатай ответ";
+  speak(s.say);
+  scrollBottom();
+}
+function addPartnerBubble(s){
+  const log = document.getElementById("dlgLog");
+  const b = document.createElement("div");
+  b.className = "bub partner";
+  b.innerHTML = '<div class="who"></div><div class="txt"></div><div class="tr" hidden></div><div class="row2"></div>';
+  b.querySelector(".who").textContent = D.partner;
+  b.querySelector(".txt").textContent = s.say;
+  b.querySelector(".tr").textContent = s.sayRu;
+  const r = b.querySelector(".row2");
+  const sp = document.createElement("button");
+  sp.className = "inline-btn"; sp.textContent = "🔊 ещё раз";
+  sp.onclick = ()=>speak(s.say);
+  const tr = document.createElement("button");
+  tr.className = "inline-btn"; tr.textContent = "перевод";
+  tr.onclick = ()=>{ const el=b.querySelector(".tr"); el.hidden = !el.hidden; };
+  r.appendChild(sp); r.appendChild(tr);
+  log.appendChild(b);
+}
+function addMeBubble(text){
+  const log = document.getElementById("dlgLog");
+  const b = document.createElement("div");
+  b.className = "bub me";
+  b.innerHTML = '<div class="who">Ты</div><div class="txt"></div>';
+  b.querySelector(".who").style.color = "inherit";
+  b.querySelector(".txt").textContent = text;
+  log.appendChild(b);
+}
+function addFbBubble(html){
+  const log = document.getElementById("dlgLog");
+  const b = document.createElement("div");
+  b.className = "bub fb";
+  b.innerHTML = html;
+  log.appendChild(b);
+  return b;
+}
+function scrollBottom(){ setTimeout(()=>window.scrollTo(0, document.body.scrollHeight), 60); }
+
+function norm(s){
+  return s.toLowerCase()
+    .replace(/ß/g,"ss").replace(/ä/g,"a").replace(/ö/g,"o").replace(/ü/g,"u")
+    .replace(/[.,!?;:„“"'()\-]/g," ").replace(/\s+/g," ").trim();
+}
+function evalAnswer(text, slots){
+  const t = " " + norm(text) + " ";
+  let hit = 0; const missed = [];
+  slots.forEach(alts=>{
+    if (alts.some(a=>t.includes(norm(a)))) hit++;
+    else missed.push(alts[0]);
+  });
+  return {hit, total:slots.length, missed};
+}
+function handleAnswer(candidates){
+  attempts++;
+  const s = D.steps[di];
+  let best = candidates[0], bestRes = evalAnswer(candidates[0], s.slots);
+  candidates.slice(1).forEach(c=>{
+    const r = evalAnswer(c, s.slots);
+    if (r.hit > bestRes.hit){ best = c; bestRes = r; }
+  });
+  addMeBubble(best);
+  const full = bestRes.hit === bestRes.total;
+  let html;
+  if (full){
+    if (attempts===1 && !usedHelp) firstTryPerfect++;
+    html = '<div><b>' + PRAISE[Math.floor(Math.random()*PRAISE.length)] + '</b></div>';
+    html += '<div class="tr">Образец: ' + esc(s.model) + ' — ' + esc(s.modelRu) + '</div>';
+  } else if (bestRes.hit > 0){
+    html = '<div><b>Почти получилось!</b> Не хватило слов:</div><div>' +
+      bestRes.missed.map(m=>'<span class="missing">'+esc(m)+'</span>').join("") + '</div>';
+    html += '<div style="margin-top:6px">Правильно так: <b>' + esc(s.model) + '</b></div>';
+    html += '<div class="tr">' + esc(s.modelRu) + ' · Послушай 🔊 и попробуй ещё раз!</div>';
+  } else {
+    html = '<div><b>Ничего страшного, давай разберём.</b></div>';
+    html += '<div style="margin-top:6px">Скажи так: <b>' + esc(s.model) + '</b></div>';
+    html += '<div class="tr">' + esc(s.modelRu) + ' · Нажми 🔊, послушай и повтори!</div>';
+  }
+  const fb = addFbBubble(html);
+  const r2 = document.createElement("div");
+  r2.className = "row2";
+  const sp = document.createElement("button");
+  sp.className = "inline-btn"; sp.textContent = "🔊 образец";
+  sp.onclick = ()=>speak(s.model);
+  r2.appendChild(sp);
+  fb.appendChild(r2);
+  if (!full) speak(s.model);
+  document.getElementById("dlgControls").hidden = true;
+  document.getElementById("dlgNextRow").hidden = false;
+  document.getElementById("btnRetry").hidden = full;
+  scrollBottom();
+}
+function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+
+function stopListen(){
+  if (rec){ try{rec.abort();}catch(e){} rec=null; }
+  const m = document.getElementById("btnMic");
+  if (m) m.classList.remove("listening");
+}
+document.getElementById("btnMic").onclick = ()=>{
+  if (rec){ stopListen(); return; }
+  if (!SR){
+    document.getElementById("typeRow").hidden = false;
+    document.getElementById("micState").textContent = "Здесь нет распознавания речи — скажи вслух, потом напечатай свой ответ";
+    return;
+  }
+  speechSynthesis.cancel();
+  rec = new SR();
+  rec.lang = "de-DE";
+  rec.interimResults = false;
+  rec.maxAlternatives = 3;
+  const mic = document.getElementById("btnMic");
+  mic.classList.add("listening");
+  document.getElementById("micState").textContent = "Слушаю… говори!";
+  rec.onresult = (e)=>{
+    const alts = Array.from(e.results[0]).map(r=>r.transcript).filter(Boolean);
+    stopListen();
+    document.getElementById("micState").textContent = "";
+    if (alts.length) handleAnswer(alts);
+  };
+  rec.onerror = (e)=>{
+    stopListen();
+    const msg = e.error==="not-allowed" ? "Разреши доступ к микрофону в браузере и попробуй снова"
+      : e.error==="no-speech" ? "Я ничего не услышала — нажми 🎤 и говори громче"
+      : "Микрофон не сработал (" + e.error + ") — попробуй ещё раз или напечатай ответ";
+    document.getElementById("micState").textContent = msg;
+  };
+  rec.onend = ()=>{ if (rec) stopListen(); };
+  try{ rec.start(); }catch(err){ stopListen(); }
+};
+document.getElementById("btnHint").onclick = ()=>{
+  usedHelp = true;
+  const s = D.steps[di];
+  const fb = addFbBubble('<div>Подсказка — скажи так: <b>'+esc(s.model)+'</b></div><div class="tr">'+esc(s.modelRu)+'</div>');
+  const r2 = document.createElement("div");
+  r2.className = "row2";
+  const sp = document.createElement("button");
+  sp.className = "inline-btn"; sp.textContent = "🔊 послушать";
+  sp.onclick = ()=>speak(s.model);
+  r2.appendChild(sp);
+  fb.appendChild(r2);
+  speak(s.model);
+  scrollBottom();
+};
+document.getElementById("btnType").onclick = ()=>{
+  const row = document.getElementById("typeRow");
+  row.hidden = !row.hidden;
+  if (!row.hidden) document.getElementById("typeInput").focus();
+};
+document.getElementById("btnCheckTyped").onclick = ()=>{
+  const v = document.getElementById("typeInput").value.trim();
+  if (!v) return;
+  document.getElementById("typeInput").value = "";
+  handleAnswer([v]);
+};
+document.getElementById("typeInput").addEventListener("keydown",(e)=>{
+  if (e.key==="Enter") document.getElementById("btnCheckTyped").onclick();
+});
+document.getElementById("btnRetry").onclick = ()=>{
+  document.getElementById("dlgNextRow").hidden = true;
+  document.getElementById("dlgControls").hidden = false;
+  document.getElementById("micState").textContent = "Нажми 🎤 и попробуй ещё раз";
+  scrollBottom();
+};
+document.getElementById("btnNext").onclick = ()=>{
+  di++;
+  if (di < D.steps.length){ stepStart(); }
+  else {
+    renderDots();
+    document.getElementById("dlgTask").hidden = true;
+    document.getElementById("dlgControls").hidden = true;
+    document.getElementById("dlgNextRow").hidden = true;
+    document.getElementById("dlgEnd").hidden = false;
+    document.getElementById("dlgScore").textContent = firstTryPerfect + " / " + D.steps.length;
+    document.getElementById("dlgMsg").textContent =
+      firstTryPerfect===D.steps.length ? "Весь диалог с первого раза — Wahnsinn! 🎉"
+      : firstTryPerfect>=Math.ceil(D.steps.length/2) ? "Отлично! Ещё разок — и будет идеально."
+      : "Хорошая тренировка! Повтори фразы и пройди диалог ещё раз.";
+    const k = "dt-dlg-"+D.id;
+    const prev = parseInt(localStorage.getItem(k)||"0",10);
+    if (firstTryPerfect>prev) localStorage.setItem(k, String(firstTryPerfect));
+    scrollBottom();
+  }
+};
+document.getElementById("btnDlgAgain").onclick = ()=>openDialog(D);
+
+renderHome();
+</script>
