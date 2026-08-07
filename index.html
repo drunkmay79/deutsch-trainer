@@ -175,6 +175,11 @@
   .dot{width:10px; height:10px; border-radius:50%; background:var(--chip); border:1px solid var(--line)}
   .dot.done{background:var(--ok); border-color:var(--ok)}
   .dot.cur{background:var(--accent); border-color:var(--accent)}
+
+  .voicebox{margin-top:22px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow)}
+  .voicebox .vt{font-weight:700; margin-bottom:10px}
+  .vrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .vrow select{flex:1; min-width:180px; padding:11px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font-size:.95rem}
 </style>
 </head>
 <body>
@@ -189,6 +194,14 @@
     <div class="sect-h">🎤 Разговор — тренировка речи</div>
     <p class="sub">Собеседник говорит по-немецки, ты отвечаешь вслух в микрофон. Приложение покажет, что получилось, и правильный вариант.</p>
     <div class="lcards" id="dialogCards"></div>
+    <div class="voicebox" id="voiceBox" hidden>
+      <div class="vt">🔊 Голос озвучки</div>
+      <div class="vrow">
+        <select id="voiceSel" aria-label="Выбрать голос"></select>
+        <button class="btn" id="btnVoiceTest">Проверить</button>
+      </div>
+      <p class="hint" style="margin:8px 0 0">Голоса даёт само устройство — выбери, какой звучит приятнее. Выбор запоминается.</p>
+    </div>
     <p class="footer-note">По учебнику Menschen A1.1 + фразы для школы · для занятий по 15–20 минут в день</p>
   </section>
 
@@ -417,9 +430,40 @@ const LESSONS = [
 const ART_COLOR = {der:"var(--der)", die:"var(--die)", das:"var(--das)"};
 
 let deVoice = null;
+function voiceScore(v){
+  const n = v.name.toLowerCase();
+  let s = 0;
+  if (n.includes("natural")) s += 40;
+  if (n.includes("google")) s += 30;
+  if (n.includes("online")) s += 20;
+  if (!v.localService) s += 10;
+  if (/(katja|amala|anna|petra|marlene|vicki|conrad)/.test(n)) s += 5;
+  if (n.includes("espeak")) s -= 30;
+  return s;
+}
+function deVoices(){
+  return speechSynthesis.getVoices().filter(v=>v.lang && v.lang.toLowerCase().startsWith("de"));
+}
 function pickVoice(){
-  const vs = speechSynthesis.getVoices();
-  deVoice = vs.find(v=>v.lang && v.lang.toLowerCase().startsWith("de")) || null;
+  const vs = deVoices();
+  if (!vs.length){ deVoice = null; return; }
+  const saved = localStorage.getItem("dt-voice");
+  deVoice = vs.find(v=>v.name===saved) || vs.slice().sort((a,b)=>voiceScore(b)-voiceScore(a))[0];
+  renderVoiceBox(vs);
+}
+function renderVoiceBox(vs){
+  const box = document.getElementById("voiceBox");
+  if (!box || !vs.length) return;
+  box.hidden = false;
+  const sel = document.getElementById("voiceSel");
+  sel.innerHTML = "";
+  vs.forEach(v=>{
+    const o = document.createElement("option");
+    o.value = v.name;
+    o.textContent = v.name.replace(/ - .*$/,"").replace(/Microsoft |Google /,"") + (v.localService ? "" : " · онлайн");
+    if (deVoice && v.name===deVoice.name) o.selected = true;
+    sel.appendChild(o);
+  });
 }
 if ("speechSynthesis" in window){
   pickVoice();
@@ -938,6 +982,15 @@ document.getElementById("btnNext").onclick = ()=>{
   }
 };
 document.getElementById("btnDlgAgain").onclick = ()=>openDialog(D);
+
+document.getElementById("voiceSel").onchange = (e)=>{
+  localStorage.setItem("dt-voice", e.target.value);
+  deVoice = deVoices().find(v=>v.name===e.target.value) || deVoice;
+  speak("Hallo! Guten Tag!");
+};
+document.getElementById("btnVoiceTest").onclick = ()=>{
+  speak("Hallo! Ich heiße Anna. Wie geht es dir?");
+};
 
 renderHome();
 </script>
