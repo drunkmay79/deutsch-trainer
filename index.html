@@ -176,6 +176,10 @@
   .dot.done{background:var(--ok); border-color:var(--ok)}
   .dot.cur{background:var(--accent); border-color:var(--accent)}
 
+  .leo{flex:none}
+  .leo-lg{width:76px; height:76px}
+  .leo-sm{width:40px; height:40px}
+
   .voicebox{margin-top:22px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow)}
   .voicebox .vt{font-weight:700; margin-bottom:10px}
   .vrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
@@ -184,9 +188,27 @@
 </head>
 <body>
 
+<svg style="display:none" aria-hidden="true"><symbol id="leo" viewBox="0 0 120 120">
+  <ellipse cx="60" cy="64" rx="47" ry="45" fill="#5fae46"/>
+  <ellipse cx="60" cy="82" rx="28" ry="17" fill="#8ccf6f"/>
+  <path d="M106 48 Q122 44 118 30 Q112 40 104 42 Z" fill="#2b6fd6"/>
+  <path d="M106 52 Q124 56 120 72 Q112 60 104 56 Z" fill="#2b6fd6"/>
+  <path d="M13 44 Q60 28 107 44 L107 62 Q60 74 13 62 Z" fill="#2b6fd6"/>
+  <ellipse cx="42" cy="52" rx="12" ry="9.5" fill="#ffffff"/>
+  <ellipse cx="78" cy="52" rx="12" ry="9.5" fill="#ffffff"/>
+  <circle cx="44" cy="53" r="4.2" fill="#1e2b29"/>
+  <circle cx="76" cy="53" r="4.2" fill="#1e2b29"/>
+  <circle cx="45.5" cy="51.5" r="1.4" fill="#ffffff"/>
+  <circle cx="77.5" cy="51.5" r="1.4" fill="#ffffff"/>
+  <circle cx="55" cy="72" r="1.6" fill="#3c7a2c"/>
+  <circle cx="65" cy="72" r="1.6" fill="#3c7a2c"/>
+  <path d="M40 84 Q60 97 80 84" fill="none" stroke="#2e5c1f" stroke-width="3.5" stroke-linecap="round"/>
+</symbol></svg>
+
 <div class="wrap">
 
   <section id="view-home">
+    <svg class="leo leo-lg" style="float:right" aria-hidden="true"><use href="#leo"/></svg>
     <div class="kicker">Deutsch-Trainer</div>
     <h1>Немецкий шаг за шагом</h1>
     <p class="sub">Выбери урок. В каждом: слова с озвучкой 🔊, фразы и игра. Нажимай на динамик — и повторяй вслух!</p>
@@ -209,6 +231,7 @@
     <div class="backrow">
       <button class="back" onclick="goHome()">← Уроки</button>
       <span class="ltitle" id="lessonTitle"></span>
+      <svg class="leo leo-sm" style="margin-left:auto" aria-hidden="true"><use href="#leo"/></svg>
     </div>
     <nav class="tabs" role="tablist">
       <button class="tab" id="tab-words" role="tab" aria-selected="true" onclick="showTab('words')">Слова</button>
@@ -266,6 +289,7 @@
         <div class="opts" id="qOpts"></div>
       </div>
       <div id="qEnd" class="center" hidden>
+        <svg class="leo leo-lg" aria-hidden="true"><use href="#leo"/></svg>
         <p class="score-big" id="qScore"></p>
         <p class="msg" id="qMsg"></p>
         <p class="best" id="bestLine2"></p>
@@ -278,6 +302,7 @@
     <div class="backrow">
       <button class="back" onclick="goHome()">← Уроки</button>
       <span class="ltitle" id="dlgTitle"></span>
+      <svg class="leo leo-sm" style="margin-left:auto" aria-hidden="true"><use href="#leo"/></svg>
     </div>
     <div class="dots" id="dlgDots"></div>
     <div class="dlg" id="dlgLog"></div>
@@ -299,6 +324,7 @@
       <button class="btn primary" id="btnNext">Дальше →</button>
     </div>
     <div class="center" id="dlgEnd" hidden>
+      <svg class="leo leo-lg" aria-hidden="true"><use href="#leo"/></svg>
       <p class="score-big" id="dlgScore"></p>
       <p class="msg" id="dlgMsg"></p>
       <button class="btn primary big" id="btnDlgAgain">Пройти ещё раз</button>
@@ -427,66 +453,62 @@ const LESSONS = [
     ]
   },
   {
-    id:"zahlen",
-    title:"Урок 3 · Числа и алфавит",
-    subtitle:"Menschen A1.1, Lektion 1–2: числа до 100, возраст, класс, буквы",
-    badge:"Menschen · Lektion 1–2",
-    phraseIntro:"Возраст, класс, номер телефона и «скажите по буквам» — это спрашивают в школе постоянно.",
+    id:"familie",
+    title:"Урок 3 · Моя семья",
+    subtitle:"Menschen A1.1, Lektion 3: мама, папа, «у меня есть брат», мой/твой",
+    badge:"Menschen · Lektion 3",
+    phraseIntro:"Рассказ о семье — любимая тема первых разговоров в новом классе.",
     cats:[
       {id:"all", label:"Все"},
-      {id:"teens", label:"11–20"},
-      {id:"tens", label:"Десятки и 100"},
-      {id:"abc", label:"Хитрые буквы"}
+      {id:"fam", label:"Семья"},
+      {id:"mein", label:"Мой – твой"},
+      {id:"leben", label:"О жизни"}
     ],
     words:[
-      {de:"elf", art:"", ru:"11", cat:"teens"},
-      {de:"zwölf", art:"", ru:"12", cat:"teens"},
-      {de:"dreizehn", art:"", ru:"13", cat:"teens"},
-      {de:"vierzehn", art:"", ru:"14", cat:"teens"},
-      {de:"fünfzehn", art:"", ru:"15", cat:"teens"},
-      {de:"sechzehn", art:"", ru:"16", cat:"teens"},
-      {de:"siebzehn", art:"", ru:"17", cat:"teens"},
-      {de:"achtzehn", art:"", ru:"18", cat:"teens"},
-      {de:"neunzehn", art:"", ru:"19", cat:"teens"},
-      {de:"zwanzig", art:"", ru:"20", cat:"teens"},
-      {de:"einundzwanzig", art:"", ru:"21 (один-и-двадцать!)", cat:"tens"},
-      {de:"dreißig", art:"", ru:"30", cat:"tens"},
-      {de:"vierzig", art:"", ru:"40", cat:"tens"},
-      {de:"fünfzig", art:"", ru:"50", cat:"tens"},
-      {de:"sechzig", art:"", ru:"60", cat:"tens"},
-      {de:"siebzig", art:"", ru:"70", cat:"tens"},
-      {de:"achtzig", art:"", ru:"80", cat:"tens"},
-      {de:"neunzig", art:"", ru:"90", cat:"tens"},
-      {de:"hundert", art:"", ru:"100", cat:"tens"},
-      {de:"J", art:"", ru:"«йот»", cat:"abc"},
-      {de:"V", art:"", ru:"«фау»", cat:"abc"},
-      {de:"W", art:"", ru:"«вэ»", cat:"abc"},
-      {de:"Z", art:"", ru:"«цэт»", cat:"abc"},
-      {de:"Y", art:"", ru:"«ипсилон»", cat:"abc"},
-      {de:"G", art:"", ru:"«гэ»", cat:"abc"},
-      {de:"H", art:"", ru:"«ха»", cat:"abc"},
-      {de:"Q", art:"", ru:"«ку»", cat:"abc"},
-      {de:"R", art:"", ru:"«эр»", cat:"abc"},
-      {de:"E", art:"", ru:"«э»", cat:"abc"},
-      {de:"I", art:"", ru:"«и»", cat:"abc"},
-      {de:"ß", art:"", ru:"«эсцэт» (двойная s)", cat:"abc"},
-      {de:"Ä", art:"", ru:"а-умлаут", cat:"abc"},
-      {de:"Ö", art:"", ru:"о-умлаут", cat:"abc"},
-      {de:"Ü", art:"", ru:"у-умлаут", cat:"abc"}
+      {de:"Familie", art:"die", ru:"семья", cat:"fam"},
+      {de:"Mutter", art:"die", ru:"мама", cat:"fam"},
+      {de:"Vater", art:"der", ru:"папа", cat:"fam"},
+      {de:"Eltern", art:"die", ru:"родители", cat:"fam"},
+      {de:"Schwester", art:"die", ru:"сестра", cat:"fam"},
+      {de:"Bruder", art:"der", ru:"брат", cat:"fam"},
+      {de:"Geschwister", art:"die", ru:"братья и сёстры", cat:"fam"},
+      {de:"Oma", art:"die", ru:"бабушка", cat:"fam"},
+      {de:"Opa", art:"der", ru:"дедушка", cat:"fam"},
+      {de:"Tante", art:"die", ru:"тётя", cat:"fam"},
+      {de:"Onkel", art:"der", ru:"дядя", cat:"fam"},
+      {de:"Kind", art:"das", ru:"ребёнок", cat:"fam"},
+      {de:"Tochter", art:"die", ru:"дочь", cat:"fam"},
+      {de:"Sohn", art:"der", ru:"сын", cat:"fam"},
+      {de:"Cousine", art:"die", ru:"двоюродная сестра", cat:"fam"},
+      {de:"Cousin", art:"der", ru:"двоюродный брат", cat:"fam"},
+      {de:"mein", art:"", ru:"мой", cat:"mein"},
+      {de:"meine", art:"", ru:"моя / мои", cat:"mein"},
+      {de:"dein", art:"", ru:"твой", cat:"mein"},
+      {de:"deine", art:"", ru:"твоя / твои", cat:"mein"},
+      {de:"er", art:"", ru:"он", cat:"mein"},
+      {de:"sie", art:"", ru:"она / они", cat:"mein"},
+      {de:"wir", art:"", ru:"мы", cat:"mein"},
+      {de:"wohnen", art:"", ru:"жить (где-то)", cat:"leben"},
+      {de:"kommen aus", art:"", ru:"быть родом из", cat:"leben"},
+      {de:"sprechen", art:"", ru:"говорить", cat:"leben"},
+      {de:"heißen", art:"", ru:"зваться", cat:"leben"},
+      {de:"leben", art:"", ru:"жить, проживать", cat:"leben"},
+      {de:"zusammen", art:"", ru:"вместе", cat:"leben"},
+      {de:"zu Hause", art:"", ru:"дома", cat:"leben"}
     ],
     phrases:[
-      {de:"Wie alt bist du?", ru:"Сколько тебе лет?"},
-      {de:"Ich bin zwölf Jahre alt.", ru:"Мне двенадцать лет."},
-      {de:"In welche Klasse gehst du?", ru:"В какой класс ты ходишь?"},
-      {de:"Ich gehe in die sechste Klasse.", ru:"Я хожу в шестой класс."},
-      {de:"Wie ist deine Handynummer?", ru:"Какой у тебя номер телефона?"},
-      {de:"Meine Nummer ist null-eins-sieben-drei.", ru:"Мой номер: 0-1-7-3…"},
-      {de:"Wie schreibt man das?", ru:"Как это пишется?"},
-      {de:"Kannst du das bitte buchstabieren?", ru:"Скажи, пожалуйста, по буквам."},
-      {de:"Ich heiße Mia: M-I-A.", ru:"Меня зовут Миа: М-И-А."},
-      {de:"Noch einmal, bitte!", ru:"Ещё раз, пожалуйста!"},
-      {de:"Das ist richtig!", ru:"Это правильно!"},
-      {de:"Wie viel ist das?", ru:"Сколько это? (например, на математике)"}
+      {de:"Das ist meine Familie.", ru:"Это моя семья."},
+      {de:"Das ist meine Mutter.", ru:"Это моя мама."},
+      {de:"Das ist mein Vater.", ru:"Это мой папа."},
+      {de:"Hast du Geschwister?", ru:"У тебя есть братья или сёстры?"},
+      {de:"Ich habe einen Bruder.", ru:"У меня есть брат."},
+      {de:"Ich habe keine Geschwister.", ru:"У меня нет братьев и сестёр."},
+      {de:"Wie heißt deine Mutter?", ru:"Как зовут твою маму?"},
+      {de:"Meine Mutter heißt Olena.", ru:"Мою маму зовут Олена."},
+      {de:"Wir kommen aus der Ukraine.", ru:"Мы из Украины."},
+      {de:"Wir wohnen zusammen in Mülheim.", ru:"Мы живём вместе в Мюльхайме."},
+      {de:"Zu Hause sprechen wir Ukrainisch und Russisch.", ru:"Дома мы говорим по-украински и по-русски."},
+      {de:"Meine Oma lebt in der Ukraine.", ru:"Моя бабушка живёт в Украине."}
     ]
   }
 ];
