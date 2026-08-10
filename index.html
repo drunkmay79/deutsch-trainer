@@ -257,6 +257,7 @@
     <nav class="tabs" role="tablist">
       <button class="tab" id="tab-words" role="tab" aria-selected="true" onclick="showTab('words')">Слова</button>
       <button class="tab" id="tab-phrases" role="tab" aria-selected="false" onclick="showTab('phrases')">Фразы</button>
+      <button class="tab" id="tab-review" role="tab" aria-selected="false" onclick="showTab('review')">Повтор</button>
       <button class="tab" id="tab-quiz" role="tab" aria-selected="false" onclick="showTab('quiz')">Игра</button>
     </nav>
 
@@ -294,6 +295,37 @@
     <section id="panel-phrases" role="tabpanel" aria-labelledby="tab-phrases" hidden>
       <p class="sub" id="phraseIntro"></p>
       <div class="plist" id="phraseList"></div>
+    </section>
+
+    <section id="panel-review" role="tabpanel" aria-labelledby="tab-review" hidden>
+      <div class="row">
+        <span class="counter" id="rCounter"></span>
+        <span class="hint">Все слова и фразы урока вперемешку</span>
+      </div>
+      <div class="q-progress"><div class="q-bar" id="rBar"></div></div>
+      <div class="card3d" id="rCardWrap">
+        <button class="flash" id="rFlash">
+          <span class="face front">
+            <span class="hint">по-русски:</span>
+            <span class="ru" id="rRu"></span>
+            <span class="hint">Скажи это по-немецки вслух, потом нажми на карточку</span>
+          </span>
+          <span class="face back">
+            <span class="word" id="rDe"></span>
+            <span class="hint">🔊 внизу — послушать ещё раз</span>
+          </span>
+        </button>
+      </div>
+      <div class="row" id="rControls">
+        <button class="speak" id="rSpeak" aria-label="Послушать">🔊</button>
+        <button class="btn primary" id="rNext">Дальше →</button>
+      </div>
+      <div class="center" id="rEnd" hidden>
+        <svg class="leo leo-lg" aria-hidden="true"><use href="#leo"/></svg>
+        <p class="score-big">🎉</p>
+        <p class="msg" id="rMsg"></p>
+        <button class="btn primary big" id="rAgain">Ещё раз (перемешать)</button>
+      </div>
     </section>
 
     <section id="panel-quiz" role="tabpanel" aria-labelledby="tab-quiz" hidden>
@@ -622,7 +654,7 @@ function openLesson(les){
   document.getElementById("view-lesson").hidden = false;
   document.getElementById("lessonTitle").textContent = L.title;
   document.getElementById("phraseIntro").textContent = L.phraseIntro;
-  renderChips(); renderWord(); renderPhrases(); resetQuizUI(); showBest();
+  renderChips(); renderWord(); renderPhrases(); resetQuizUI(); showBest(); startReview();
   showTab("words");
   window.scrollTo(0,0);
 }
@@ -635,7 +667,7 @@ function goHome(){
   window.scrollTo(0,0);
 }
 function showTab(name){
-  ["words","phrases","quiz"].forEach(t=>{
+  ["words","phrases","review","quiz"].forEach(t=>{
     document.getElementById("panel-"+t).hidden = (t!==name);
     document.getElementById("tab-"+t).setAttribute("aria-selected", t===name ? "true":"false");
   });
@@ -696,6 +728,50 @@ function renderPhrases(){
 
 let quiz = [], qi = 0, score = 0;
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+let reviewDeck = [], rIdx = 0;
+function startReview(){
+  reviewDeck = shuffle(
+    L.words.map(w=>({ru:w.ru, de:(w.art ? w.art+" " : "")+w.de}))
+      .concat(L.phrases.map(p=>({ru:p.ru, de:p.de})))
+  );
+  rIdx = 0;
+  document.getElementById("rEnd").hidden = true;
+  document.getElementById("rCardWrap").hidden = false;
+  document.getElementById("rControls").hidden = false;
+  renderReview();
+}
+function renderReview(){
+  const c = reviewDeck[rIdx];
+  document.getElementById("rFlash").classList.remove("flipped");
+  const ru = document.getElementById("rRu");
+  ru.textContent = c.ru;
+  ru.style.fontSize = c.ru.length > 28 ? "1.15rem" : "";
+  const de = document.getElementById("rDe");
+  de.textContent = c.de;
+  de.style.fontSize = c.de.length > 22 ? "1.3rem" : "";
+  document.getElementById("rCounter").textContent = (rIdx+1) + " / " + reviewDeck.length;
+  document.getElementById("rBar").style.width = (rIdx/reviewDeck.length*100) + "%";
+}
+document.getElementById("rFlash").onclick = ()=>{
+  const f = document.getElementById("rFlash");
+  const wasFlipped = f.classList.contains("flipped");
+  f.classList.toggle("flipped");
+  if (!wasFlipped) speak(reviewDeck[rIdx].de);
+};
+document.getElementById("rSpeak").onclick = ()=>speak(reviewDeck[rIdx].de);
+document.getElementById("rNext").onclick = ()=>{
+  rIdx++;
+  if (rIdx < reviewDeck.length){ renderReview(); }
+  else {
+    document.getElementById("rCardWrap").hidden = true;
+    document.getElementById("rControls").hidden = true;
+    document.getElementById("rEnd").hidden = false;
+    document.getElementById("rMsg").textContent = "Пройдены все карточки урока (" + reviewDeck.length + " шт.) — Super!";
+    document.getElementById("rBar").style.width = "100%";
+  }
+};
+document.getElementById("rAgain").onclick = startReview;
 function showBest(){
   const b = localStorage.getItem(bestKey());
   const t = b ? "Твой рекорд: "+b+" из 10" : "";
