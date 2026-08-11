@@ -36,6 +36,7 @@
     --shadow:0 2px 10px rgba(30,60,55,.08);
   }
   *{box-sizing:border-box}
+  [hidden]{display:none !important}
   html,body{margin:0;padding:0}
   body{
     background:var(--bg); color:var(--ink);
@@ -180,6 +181,20 @@
   .leo-lg{width:76px; height:76px}
   .leo-sm{width:40px; height:40px}
 
+  .btn:disabled{opacity:.45; cursor:default}
+  .grades{display:flex; gap:8px; margin-top:4px}
+  .grade{flex:1; padding:13px 4px; font-size:.95rem}
+
+  .scorebox{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow); margin-bottom:16px}
+  .sc-top{display:flex; align-items:baseline; gap:10px; margin-bottom:8px}
+  .sc-num{font-size:1.9rem; font-weight:700; font-variant-numeric:tabular-nums}
+  .sc-label{color:var(--muted); font-size:.95rem}
+  .sc-row{display:flex; align-items:center; gap:8px; font-size:.83rem; margin-top:6px}
+  .sc-name{width:110px; color:var(--muted)}
+  .sc-bar{flex:1; height:8px; background:var(--chip); border-radius:99px; overflow:hidden}
+  .sc-fill{display:block; height:100%; background:var(--accent); border-radius:99px}
+  .sc-pts{width:44px; text-align:right; font-variant-numeric:tabular-nums; color:var(--muted)}
+
   .voicebox{margin-top:22px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow)}
   .voicebox .vt{font-weight:700; margin-bottom:10px}
   .vrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
@@ -232,7 +247,11 @@
     <svg class="leo leo-lg" style="float:right" aria-hidden="true"><use href="#leo"/></svg>
     <div class="kicker">Deutsch-Trainer</div>
     <h1>Немецкий шаг за шагом</h1>
-    <p class="sub">Выбери урок. В каждом: слова с озвучкой 🔊, фразы и игра. Нажимай на динамик — и повторяй вслух!</p>
+    <p class="sub">Выбери урок. В каждом: слова с озвучкой 🔊, фразы, повтор и игра. Нажимай на динамик — и повторяй вслух!</p>
+    <div class="scorebox" id="scoreBox">
+      <div class="sc-top"><span class="sc-num" id="scNum"></span><span class="sc-label" id="scLabel"></span></div>
+      <div id="scRows"></div>
+    </div>
     <div class="lcards" id="lessonCards"></div>
     <div class="sect-h">🎤 Разговор — тренировка речи</div>
     <p class="sub">Собеседник говорит по-немецки, ты отвечаешь вслух в микрофон. Приложение покажет, что получилось, и правильный вариант.</p>
@@ -300,7 +319,7 @@
     <section id="panel-review" role="tabpanel" aria-labelledby="tab-review" hidden>
       <div class="row">
         <span class="counter" id="rCounter"></span>
-        <span class="hint">Все слова и фразы урока вперемешку</span>
+        <span class="hint">Повторы по расписанию, как в Anki</span>
       </div>
       <div class="q-progress"><div class="q-bar" id="rBar"></div></div>
       <div class="card3d" id="rCardWrap">
@@ -312,19 +331,24 @@
           </span>
           <span class="face back">
             <span class="word" id="rDe"></span>
-            <span class="hint">🔊 внизу — послушать ещё раз</span>
+            <span class="hint">Нажми ещё раз — послушать. Как получилось?</span>
           </span>
         </button>
       </div>
-      <div class="row" id="rControls">
-        <button class="speak" id="rSpeak" aria-label="Послушать">🔊</button>
-        <button class="btn primary" id="rNext">Дальше →</button>
+      <div class="grades" id="rGrades" hidden>
+        <button class="btn grade" id="gFail">😕 Не знала</button>
+        <button class="btn grade" id="gMid">🙂 Почти</button>
+        <button class="btn grade" id="gEasy">😎 Легко!</button>
+      </div>
+      <div class="row" id="rNav" style="justify-content:center; margin-top:10px">
+        <button class="btn" id="rBack">← Назад</button>
       </div>
       <div class="center" id="rEnd" hidden>
         <svg class="leo leo-lg" aria-hidden="true"><use href="#leo"/></svg>
         <p class="score-big">🎉</p>
         <p class="msg" id="rMsg"></p>
-        <button class="btn primary big" id="rAgain">Ещё раз (перемешать)</button>
+        <p class="best" id="rStats"></p>
+        <button class="btn primary big" id="rAgain">Дополнительная тренировка (вся колода)</button>
       </div>
     </section>
 
@@ -629,7 +653,8 @@ function renderHome(){
     const best = localStorage.getItem("dt-best-"+les.id);
     b.innerHTML = '<div class="lt"></div><div class="ls"></div><span class="lb"></span>';
     b.querySelector(".lt").textContent = les.title;
-    b.querySelector(".ls").textContent = les.subtitle + " · " + les.words.length + " слов · " + les.phrases.length + " фраз";
+    const lst = lessonLearnedStats(les);
+    b.querySelector(".ls").textContent = les.subtitle + " · " + les.words.length + " слов · " + les.phrases.length + " фраз" + (lst.learned ? " · 🧠 выучено " + lst.learned + "/" + lst.total : "");
     b.querySelector(".lb").textContent = best ? ("🏆 рекорд в игре: "+best+"/10") : les.badge;
     b.onclick = ()=>openLesson(les);
     box.appendChild(b);
@@ -647,6 +672,7 @@ function renderHome(){
     b.onclick = ()=>openDialog(d);
     dbox.appendChild(b);
   });
+  renderScore();
 }
 function openLesson(les){
   L = les; cat = "all"; pool = L.words.slice(); idx = 0;
@@ -729,49 +755,217 @@ function renderPhrases(){
 let quiz = [], qi = 0, score = 0;
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
-let reviewDeck = [], rIdx = 0;
+const SRS_INT = [0, 1, 3, 7, 14, 30];
+function dateStr(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+function todayStr(){ return dateStr(new Date()); }
+function addDaysStr(n){ const d = new Date(); d.setDate(d.getDate()+n); return dateStr(d); }
+function humanDue(ds){
+  const p = ds.split("-").map(Number);
+  const due = new Date(p[0], p[1]-1, p[2]);
+  const now = new Date(); now.setHours(0,0,0,0);
+  const diff = Math.round((due - now) / 86400000);
+  return diff <= 1 ? "завтра" : "через " + diff + " дн.";
+}
+function loadJson(key, fallback){
+  try{
+    const v = JSON.parse(localStorage.getItem(key));
+    if (v === null || v === undefined) return fallback;
+    if (Array.isArray(fallback) !== Array.isArray(v)) return fallback;
+    if (typeof v !== typeof fallback) return fallback;
+    return v;
+  }catch(e){ return fallback; }
+}
+function srsLoad(id){ return loadJson("dt-srs-"+id, {}); }
+function lessonCards(les){
+  return les.words.map(w=>({ru:w.ru, de:(w.art ? w.art+" " : "")+w.de}))
+    .concat(les.phrases.map(p=>({ru:p.ru, de:p.de})));
+}
+function lessonLearnedStats(les){
+  const map = srsLoad(les.id);
+  const cards = lessonCards(les);
+  let learned = 0, sumB = 0;
+  cards.forEach(c=>{ const st = map[c.de]; if (st){ sumB += st.b; if (st.b >= 3) learned++; } });
+  return {learned, total: cards.length, sumB};
+}
+function logActivity(){
+  const days = loadJson("dt-days", {});
+  const t = todayStr();
+  days[t] = (days[t]||0) + 1;
+  localStorage.setItem("dt-days", JSON.stringify(days));
+}
+function logGrade(v){
+  let g = loadJson("dt-grades", []);
+  g.push(v);
+  if (g.length > 100) g = g.slice(-100);
+  localStorage.setItem("dt-grades", JSON.stringify(g));
+}
+
+let rQueue = [], rHistory = [], rCurrent = null, rSrs = {}, rSession = {f:0,m:0,e:0};
 function startReview(){
-  reviewDeck = shuffle(
-    L.words.map(w=>({ru:w.ru, de:(w.art ? w.art+" " : "")+w.de}))
-      .concat(L.phrases.map(p=>({ru:p.ru, de:p.de})))
-  );
-  rIdx = 0;
+  rSrs = srsLoad(L.id);
+  const t = todayStr();
+  const due = [], fresh = [];
+  lessonCards(L).forEach(c=>{
+    const st = rSrs[c.de];
+    if (!st) fresh.push(c);
+    else if (st.d <= t) due.push(c);
+  });
+  rQueue = shuffle(due).concat(shuffle(fresh));
+  beginSession(true);
+}
+function startExtra(){
+  rSrs = srsLoad(L.id);
+  rQueue = shuffle(lessonCards(L));
+  beginSession(false);
+}
+function beginSession(scheduled){
+  rHistory = []; rSession = {f:0,m:0,e:0};
+  if (!rQueue.length){ showRDone(scheduled); return; }
   document.getElementById("rEnd").hidden = true;
   document.getElementById("rCardWrap").hidden = false;
-  document.getElementById("rControls").hidden = false;
+  document.getElementById("rNav").hidden = false;
+  rCurrent = rQueue.shift();
   renderReview();
 }
 function renderReview(){
-  const c = reviewDeck[rIdx];
   document.getElementById("rFlash").classList.remove("flipped");
+  document.getElementById("rGrades").hidden = true;
   const ru = document.getElementById("rRu");
-  ru.textContent = c.ru;
-  ru.style.fontSize = c.ru.length > 28 ? "1.15rem" : "";
+  ru.textContent = rCurrent.ru;
+  ru.style.fontSize = rCurrent.ru.length > 28 ? "1.15rem" : "";
   const de = document.getElementById("rDe");
-  de.textContent = c.de;
-  de.style.fontSize = c.de.length > 22 ? "1.3rem" : "";
-  document.getElementById("rCounter").textContent = (rIdx+1) + " / " + reviewDeck.length;
-  document.getElementById("rBar").style.width = (rIdx/reviewDeck.length*100) + "%";
+  de.textContent = rCurrent.de;
+  de.style.fontSize = rCurrent.de.length > 22 ? "1.3rem" : "";
+  const done = rHistory.length, left = rQueue.length + 1;
+  document.getElementById("rCounter").textContent = "Пройдено: " + done + " · осталось: " + left;
+  document.getElementById("rBar").style.width = (done/(done+left)*100) + "%";
+  document.getElementById("rBack").disabled = !rHistory.length;
 }
 document.getElementById("rFlash").onclick = ()=>{
   const f = document.getElementById("rFlash");
-  const wasFlipped = f.classList.contains("flipped");
-  f.classList.toggle("flipped");
-  if (!wasFlipped) speak(reviewDeck[rIdx].de);
-};
-document.getElementById("rSpeak").onclick = ()=>speak(reviewDeck[rIdx].de);
-document.getElementById("rNext").onclick = ()=>{
-  rIdx++;
-  if (rIdx < reviewDeck.length){ renderReview(); }
-  else {
-    document.getElementById("rCardWrap").hidden = true;
-    document.getElementById("rControls").hidden = true;
-    document.getElementById("rEnd").hidden = false;
-    document.getElementById("rMsg").textContent = "Пройдены все карточки урока (" + reviewDeck.length + " шт.) — Super!";
-    document.getElementById("rBar").style.width = "100%";
+  if (!f.classList.contains("flipped")){
+    f.classList.add("flipped");
+    document.getElementById("rGrades").hidden = false;
   }
+  speak(rCurrent.de);
 };
-document.getElementById("rAgain").onclick = startReview;
+function applyGrade(g){
+  const key = rCurrent.de, t = todayStr();
+  const prev = rSrs[key] ? Object.assign({}, rSrs[key]) : null;
+  const st = rSrs[key] || {b:0, d:t, s:0, f:0};
+  st.s++;
+  if (g === 0){
+    st.f++; st.b = 0; st.d = t; delete st.la; rSession.f++;
+  } else {
+    if (st.la !== t){
+      if (g === 1){ st.b = Math.max(1, st.b); st.d = addDaysStr(1); }
+      else { st.b = Math.min(5, st.b + 1); st.d = addDaysStr(SRS_INT[st.b]); }
+      st.la = t;
+    }
+    if (g === 1) rSession.m++; else rSession.e++;
+  }
+  rSrs[key] = st;
+  localStorage.setItem("dt-srs-"+L.id, JSON.stringify(rSrs));
+  logActivity(); logGrade(g);
+  rHistory.push({card: rCurrent, prev: prev, grade: g});
+  if (g === 0) rQueue.splice(Math.min(3, rQueue.length), 0, rCurrent);
+  if (rQueue.length){ rCurrent = rQueue.shift(); renderReview(); }
+  else showRDone(false);
+}
+document.getElementById("gFail").onclick = ()=>applyGrade(0);
+document.getElementById("gMid").onclick = ()=>applyGrade(1);
+document.getElementById("gEasy").onclick = ()=>applyGrade(2);
+document.getElementById("rBack").onclick = ()=>{
+  if (!rHistory.length) return;
+  const last = rHistory.pop();
+  if (last.prev) rSrs[last.card.de] = last.prev; else delete rSrs[last.card.de];
+  localStorage.setItem("dt-srs-"+L.id, JSON.stringify(rSrs));
+  const g = loadJson("dt-grades", []);
+  g.pop();
+  localStorage.setItem("dt-grades", JSON.stringify(g));
+  const days = loadJson("dt-days", {});
+  const t = todayStr();
+  if (days[t]){ days[t]--; if (!days[t]) delete days[t]; localStorage.setItem("dt-days", JSON.stringify(days)); }
+  if (last.grade === 0){
+    rSession.f--;
+    const ix = rQueue.indexOf(last.card);
+    if (ix >= 0) rQueue.splice(ix, 1);
+  }
+  else if (last.grade === 1) rSession.m--;
+  else rSession.e--;
+  rQueue.unshift(rCurrent);
+  rCurrent = last.card;
+  renderReview();
+};
+function showRDone(nothingDue){
+  document.getElementById("rCardWrap").hidden = true;
+  document.getElementById("rNav").hidden = true;
+  document.getElementById("rGrades").hidden = true;
+  document.getElementById("rEnd").hidden = false;
+  const stats = lessonLearnedStats(L);
+  let msg, extra;
+  if (nothingDue){
+    msg = "На сегодня всё повторено!";
+    let min = null;
+    lessonCards(L).forEach(c=>{ const st = rSrs[c.de]; if (st && st.d > todayStr() && (!min || st.d < min)) min = st.d; });
+    extra = "Выучено надолго: " + stats.learned + " из " + stats.total + (min ? " · следующий повтор: " + humanDue(min) : "");
+    document.getElementById("rCounter").textContent = "Сегодня повторять нечего";
+  } else {
+    msg = "Готово на сегодня!";
+    extra = "😎 " + rSession.e + " · 🙂 " + rSession.m + " · 😕 " + rSession.f + " · выучено надолго: " + stats.learned + " из " + stats.total;
+    document.getElementById("rCounter").textContent = "Пройдено: " + rHistory.length + " · осталось: 0";
+  }
+  document.getElementById("rBar").style.width = "100%";
+  document.getElementById("rMsg").textContent = msg;
+  document.getElementById("rStats").textContent = extra;
+}
+document.getElementById("rAgain").onclick = startExtra;
+
+function computeScore(){
+  const days = loadJson("dt-days", {});
+  let cnt = 0;
+  for (let i = 0; i < 7; i++){
+    const d = new Date(); d.setDate(d.getDate() - i);
+    if (days[dateStr(d)]) cnt++;
+  }
+  const reg = Math.min(15, Math.round(cnt/7*15));
+  let sumB = 0, tot = 0;
+  LESSONS.forEach(les=>{ const st = lessonLearnedStats(les); sumB += st.sumB; tot += st.total; });
+  const know = Math.min(20, tot ? Math.round(sumB/(tot*5)*20) : 0);
+  const g = loadJson("dt-grades", []).filter(v=>v===0 || v===1 || v===2);
+  const GRADE_W = [0.25, 0.65, 1];
+  const succ = Math.min(10, g.length ? Math.round(g.reduce((a,v)=>a+GRADE_W[v],0)/g.length*10) : 0);
+  let qsum = 0;
+  LESSONS.forEach(les=>{ const n = parseInt(localStorage.getItem("dt-best-"+les.id)||"0",10); qsum += (isNaN(n) ? 0 : Math.min(10,n))/10; });
+  let dsum = 0;
+  DIALOGS.forEach(d=>{ const n = parseInt(localStorage.getItem("dt-dlg-"+d.id)||"0",10); dsum += (isNaN(n) ? 0 : Math.min(d.steps.length,n))/d.steps.length; });
+  const games = Math.min(5, Math.round((LESSONS.length ? qsum/LESSONS.length : 0)*2.5 + (DIALOGS.length ? dsum/DIALOGS.length : 0)*2.5));
+  return {total: reg+know+succ+games, parts:[
+    {name:"Регулярность", pts:reg, max:15},
+    {name:"Знание слов", pts:know, max:20},
+    {name:"Успешность", pts:succ, max:10},
+    {name:"Игры и диалоги", pts:games, max:5}
+  ]};
+}
+function scoreLabel(t){
+  return t<=10 ? "только начинаем" : t<=20 ? "разгоняемся" : t<=30 ? "хороший темп" : t<=40 ? "отлично занимаешься!" : "супер-уровень!";
+}
+function renderScore(){
+  const s = computeScore();
+  document.getElementById("scNum").textContent = s.total + " / 50";
+  document.getElementById("scLabel").textContent = scoreLabel(s.total);
+  const rows = document.getElementById("scRows");
+  rows.innerHTML = "";
+  s.parts.forEach(p=>{
+    const r = document.createElement("div");
+    r.className = "sc-row";
+    r.innerHTML = '<span class="sc-name"></span><span class="sc-bar"><span class="sc-fill"></span></span><span class="sc-pts"></span>';
+    r.querySelector(".sc-name").textContent = p.name;
+    r.querySelector(".sc-fill").style.width = Math.min(100, p.pts/p.max*100) + "%";
+    r.querySelector(".sc-pts").textContent = p.pts + "/" + p.max;
+    rows.appendChild(r);
+  });
+}
 function showBest(){
   const b = localStorage.getItem(bestKey());
   const t = b ? "Твой рекорд: "+b+" из 10" : "";
@@ -844,6 +1038,7 @@ function endQuiz(){
   document.getElementById("qMsg").textContent = m;
   const b = parseInt(localStorage.getItem(bestKey())||"0",10);
   if (score>b) localStorage.setItem(bestKey(), String(score));
+  logActivity();
   showBest();
 }
 
@@ -1160,6 +1355,7 @@ document.getElementById("btnNext").onclick = ()=>{
     const k = "dt-dlg-"+D.id;
     const prev = parseInt(localStorage.getItem(k)||"0",10);
     if (firstTryPerfect>prev) localStorage.setItem(k, String(firstTryPerfect));
+    logActivity();
     scrollBottom();
   }
 };
