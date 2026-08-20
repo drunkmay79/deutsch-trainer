@@ -414,6 +414,28 @@
     </div>
   </section>
 
+  <section id="view-check" hidden>
+    <div class="kicker">Контрольный срез</div>
+    <h1>Проверка перед отчётом</h1>
+    <p class="sub">Восемь случайных слов из тех, что ты уже отметила знакомыми. Проверяет программа — отвечай сама!</p>
+    <div class="q-progress"><div class="q-bar" id="csBar"></div></div>
+    <div id="csGame">
+      <p class="counter center" id="csCounter"></p>
+      <p class="q-word" id="csWord"></p>
+      <p class="q-task" id="csTask"></p>
+      <div class="opts" id="csOpts"></div>
+    </div>
+    <div class="center" id="csEnd" hidden>
+      <svg class="leo leo-lg" aria-hidden="true"><use href="#leo"/></svg>
+      <p class="score-big" id="csScore"></p>
+      <p class="msg" id="csMsg"></p>
+      <div class="row" style="justify-content:center">
+        <button class="btn" id="btnCsCancel">← Назад</button>
+        <button class="btn primary" id="btnCsShare">📤 Отправить отчёт</button>
+      </div>
+    </div>
+  </section>
+
   <section id="view-report" hidden>
     <svg class="leo leo-lg" style="float:right" aria-hidden="true"><use href="#leo"/></svg>
     <div class="kicker">Deutsch-Trainer · отчёт для родителей</div>
@@ -423,6 +445,7 @@
       <div class="sc-top"><span class="sc-num" id="repNum"></span><span class="sc-label" id="repLabel"></span></div>
       <div id="repParts"></div>
       <p class="rep-note" id="repTotals"></p>
+      <p class="rep-note" id="repCs"></p>
     </div>
     <div class="sect-h">📅 Дни занятий (последние 2 недели)</div>
     <p class="sub" id="repDays"></p>
@@ -1415,6 +1438,7 @@ function goHome(){
   stopListen();
   document.getElementById("view-lesson").hidden = true;
   document.getElementById("view-dialog").hidden = true;
+  document.getElementById("view-check").hidden = true;
   document.getElementById("view-home").hidden = false;
   renderHome();
   window.scrollTo(0,0);
@@ -2361,9 +2385,10 @@ function unrle(s){
   }
   return out;
 }
-function buildReport(){
+function buildReport(cs){
   const sc = computeScore();
   const rep = {v:1, t: Date.now(), days:{}, sc:{total:sc.total, p:sc.parts.map(p=>p.pts)}, l:{}};
+  if (cs) rep.cs = cs;
   const days = loadJson("dt-days", {});
   for (let i = 0; i < 14; i++){
     const d = new Date(); d.setDate(d.getDate()-i);
@@ -2383,8 +2408,8 @@ function buildReport(){
   });
   return rep;
 }
-document.getElementById("btnShare").onclick = async ()=>{
-  const url = SITE_URL + "#r=" + b64uEncode(JSON.stringify(buildReport()));
+async function doShare(cs){
+  const url = SITE_URL + "#r=" + b64uEncode(JSON.stringify(buildReport(cs)));
   if (navigator.share){
     try{ await navigator.share({title: "Отчёт Deutsch-Trainer", url: url}); return; }
     catch(e){ if (e && e.name === "AbortError") return; }
@@ -2395,7 +2420,91 @@ document.getElementById("btnShare").onclick = async ()=>{
   }catch(e){
     prompt("Скопируй эту ссылку и отправь папе:", url);
   }
+}
+function csPool(){
+  const pool = [];
+  LESSONS.forEach(les=>{
+    const map = srsLoad(les.id);
+    les.words.forEach(w=>{
+      const key = (w.art ? w.art+" " : "") + w.de;
+      const st = map[key];
+      if (st && st.b >= 1) pool.push({w: w, les: les});
+    });
+  });
+  return pool;
+}
+let csQuiz = [], csI = 0, csOk = 0, csAtt = 1;
+document.getElementById("btnShare").onclick = ()=>{
+  const pool = csPool();
+  if (pool.length < 4){ doShare(null); return; }
+  const t = todayStr();
+  let att = loadJson("dt-csatt", {});
+  if (att.d !== t) att = {d: t, n: 0};
+  att.n++;
+  localStorage.setItem("dt-csatt", JSON.stringify(att));
+  csAtt = att.n;
+  csQuiz = shuffle(pool).slice(0, 8).map(x=>({...x, dir: Math.random() < 0.5 ? "de2ru" : "ru2de"}));
+  csI = 0; csOk = 0;
+  document.getElementById("view-home").hidden = true;
+  document.getElementById("view-check").hidden = false;
+  document.getElementById("csGame").hidden = false;
+  document.getElementById("csEnd").hidden = true;
+  renderCsQ();
+  window.scrollTo(0,0);
 };
+function renderCsQ(){
+  const q = csQuiz[csI], w = q.w;
+  document.getElementById("csBar").style.width = (csI/csQuiz.length*100) + "%";
+  document.getElementById("csCounter").textContent = "Слово " + (csI+1) + " из " + csQuiz.length;
+  const sameLesson = q.les.words.filter(x=>x.de !== w.de);
+  const others = shuffle(sameLesson.slice()).slice(0, 3);
+  while (others.length < 3){
+    const r = q.les.words[Math.floor(Math.random()*q.les.words.length)];
+    if (r.de !== w.de && !others.includes(r)) others.push(r);
+  }
+  const opts = shuffle([w, ...others]);
+  const box = document.getElementById("csOpts");
+  box.innerHTML = "";
+  const mk = (label, correct)=>{
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = label;
+    b.onclick = ()=>{
+      document.querySelectorAll("#csOpts .opt").forEach(x=>x.disabled = true);
+      if (correct){ b.classList.add("ok"); csOk++; }
+      else {
+        b.classList.add("bad");
+        document.querySelectorAll("#csOpts .opt").forEach(x=>{ if (x.dataset.ok === "1") x.classList.add("ok"); });
+      }
+      speak((w.art ? w.art+" " : "") + w.de);
+      setTimeout(()=>{ csI++; if (csI < csQuiz.length) renderCsQ(); else endCs(); }, 1100);
+    };
+    if (correct) b.dataset.ok = "1";
+    return b;
+  };
+  if (q.dir === "de2ru"){
+    document.getElementById("csWord").textContent = (w.art ? w.art+" " : "") + w.de;
+    document.getElementById("csTask").textContent = "Что это по-русски?";
+    opts.forEach(o=>box.appendChild(mk(o.ru, o === w)));
+  } else {
+    document.getElementById("csWord").textContent = w.ru;
+    document.getElementById("csTask").textContent = "Как это по-немецки?";
+    opts.forEach(o=>box.appendChild(mk((o.art ? o.art+" " : "") + o.de, o === w)));
+  }
+}
+function endCs(){
+  document.getElementById("csBar").style.width = "100%";
+  document.getElementById("csGame").hidden = true;
+  document.getElementById("csEnd").hidden = false;
+  document.getElementById("csScore").textContent = csOk + " / " + csQuiz.length;
+  const ratio = csOk / csQuiz.length;
+  document.getElementById("csMsg").textContent =
+    ratio >= 0.75 ? "Super! Срез пройден — отправляй отчёт с гордостью! 🎉"
+    : ratio >= 0.5 ? "Неплохо, но часть слов подзабылась. Отчёт можно отправить, а слова — повторить."
+    : "Слова подзабылись — стоит пройтись по «Повтору». Отчёт всё равно можно отправить, папа увидит честную картину.";
+}
+document.getElementById("btnCsShare").onclick = ()=>doShare({ok: csOk, total: csQuiz.length, att: csAtt});
+document.getElementById("btnCsCancel").onclick = goHome;
 const PART_META = [["Регулярность",15],["Знание слов",20],["Успешность",10],["Игры и диалоги",5]];
 function renderParentReport(enc){
   let rep = null;
@@ -2488,6 +2597,17 @@ function renderParentReport(enc){
     box.appendChild(el);
   });
   document.getElementById("repTotals").textContent = "Всего выучено надолго: " + sumLearned + " из " + sumTotal + " слов и фраз курса.";
+  const csEl = document.getElementById("repCs");
+  if (rep.cs && typeof rep.cs.ok === "number" && typeof rep.cs.total === "number" && rep.cs.total > 0){
+    const ratio = rep.cs.ok / rep.cs.total;
+    const verdict = ratio >= 0.75 ? "хорошо, самооценкам можно верить"
+      : ratio >= 0.5 ? "средне, часть слов знает нетвёрдо"
+      : "слабо — похоже, «Легко» нажимается слишком щедро";
+    csEl.textContent = "🎯 Контрольный срез (объективный тест перед отправкой): " + rep.cs.ok + " из " + rep.cs.total +
+      (rep.cs.att > 1 ? " · попытка " + rep.cs.att + " за день" : "") + " — " + verdict + ".";
+  } else {
+    csEl.textContent = "🎯 Контрольный срез не проводился (пока мало слов, отмеченных знакомыми).";
+  }
   }catch(e){
     document.getElementById("view-report").hidden = true;
     document.getElementById("view-home").hidden = false;
