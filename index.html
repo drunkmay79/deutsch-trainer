@@ -1450,7 +1450,7 @@ function renderWord(){
   document.getElementById("fDe").textContent = (w.art ? w.art+" " : "") + w.de;
   document.getElementById("wCounter").textContent = (idx+1) + " / " + pool.length;
 }
-flash.onclick = ()=> flash.classList.toggle("flipped");
+flash.onclick = ()=>{ flash.classList.toggle("flipped"); logActivity(); };
 document.getElementById("btnSpeakWord").onclick = ()=>{
   const w = pool[idx];
   speak((w.art ? w.art+" " : "") + w.de);
@@ -1473,7 +1473,7 @@ function renderPhrases(){
     s.className = "speak";
     s.textContent = "🔊";
     s.setAttribute("aria-label","Послушать фразу");
-    s.onclick = ()=>speak(p.de);
+    s.onclick = ()=>{ speak(p.de); logActivity(); };
     d.appendChild(t); d.appendChild(s);
     pl.appendChild(d);
   });
@@ -2184,6 +2184,7 @@ function evalAnswer(text, slots){
 }
 function handleAnswer(candidates){
   attempts++;
+  logActivity();
   const s = D.steps[di];
   let best = candidates[0], bestRes = evalAnswer(candidates[0], s.slots);
   candidates.slice(1).forEach(c=>{
@@ -2427,7 +2428,7 @@ function renderParentReport(enc){
   });
   const dayKeys = Object.keys(rep.days || {}).sort().reverse();
   document.getElementById("repDays").textContent = dayKeys.length
-    ? dayKeys.map(k=>k.slice(8,10) + "." + k.slice(5,7) + " — " + rep.days[k] + " ответов").join(" · ")
+    ? dayKeys.map(k=>k.slice(8,10) + "." + k.slice(5,7) + " — " + rep.days[k] + " действий").join(" · ")
     : "За последние две недели занятий не было.";
   let sumLearned = 0, sumTotal = 0;
   const box = document.getElementById("repLessons");
