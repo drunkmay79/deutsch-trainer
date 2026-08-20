@@ -194,6 +194,9 @@
   .sc-bar{flex:1; height:8px; background:var(--chip); border-radius:99px; overflow:hidden}
   .sc-fill{display:block; height:100%; background:var(--accent); border-radius:99px}
   .sc-pts{width:44px; text-align:right; font-variant-numeric:tabular-nums; color:var(--muted)}
+  .weak{font-size:.88rem; margin-top:8px; line-height:1.5}
+  .weak b{color:var(--bad); font-weight:600}
+  .rep-note{color:var(--muted); font-size:.85rem; margin-top:8px}
 
   .voicebox{margin-top:22px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:var(--shadow)}
   .voicebox .vt{font-weight:700; margin-bottom:10px}
@@ -251,6 +254,9 @@
     <div class="scorebox" id="scoreBox">
       <div class="sc-top"><span class="sc-num" id="scNum"></span><span class="sc-label" id="scLabel"></span></div>
       <div id="scRows"></div>
+      <div class="row" style="margin-top:12px; justify-content:flex-end">
+        <button class="btn" id="btnShare">📤 Отчёт для папы</button>
+      </div>
     </div>
     <div class="lcards" id="lessonCards"></div>
     <div class="sect-h">🎤 Разговор — тренировка речи</div>
@@ -406,6 +412,24 @@
       <p class="msg" id="dlgMsg"></p>
       <button class="btn primary big" id="btnDlgAgain">Пройти ещё раз</button>
     </div>
+  </section>
+
+  <section id="view-report" hidden>
+    <svg class="leo leo-lg" style="float:right" aria-hidden="true"><use href="#leo"/></svg>
+    <div class="kicker">Deutsch-Trainer · отчёт для родителей</div>
+    <h1>Как идёт учёба</h1>
+    <p class="sub" id="repDate"></p>
+    <div class="scorebox">
+      <div class="sc-top"><span class="sc-num" id="repNum"></span><span class="sc-label" id="repLabel"></span></div>
+      <div id="repParts"></div>
+      <p class="rep-note" id="repTotals"></p>
+    </div>
+    <div class="sect-h">📅 Дни занятий (последние 2 недели)</div>
+    <p class="sub" id="repDays"></p>
+    <div class="sect-h">📚 По урокам</div>
+    <div class="lcards" id="repLessons"></div>
+    <p class="rep-note">«Выучено надолго» — слово отвечено верно несколько дней подряд, повтор через неделю и реже. «В работе» — учится, повторы через 1–3 дня. «Пока не даются» — последний ответ был «не знала».</p>
+    <p class="footer-note"><button class="btn" id="btnOpenTrainer">Открыть тренажёр</button></p>
   </section>
 
 </div>
@@ -2301,7 +2325,180 @@ document.getElementById("btnVoiceTest").onclick = ()=>{
   speak("Hallo! Ich heiße Anna. Wie geht es dir?");
 };
 
-renderHome();
+function b64uEncode(s){ return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function b64uDecode(s){ s = s.replace(/-/g,"+").replace(/_/g,"/"); while (s.length % 4) s += "="; return atob(s); }
+const SITE_URL = "https://drunkmay79.github.io/deutsch-trainer/";
+function hashLesson(cards){
+  let h = 5381;
+  const s = cards.map(c=>c.de).join("|");
+  for (let i = 0; i < s.length; i++){ h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; }
+  return h.toString(36);
+}
+function rle(s){
+  let out = "";
+  for (let i = 0; i < s.length;){
+    let j = i;
+    while (j < s.length && s[j] === s[i]) j++;
+    const n = j - i;
+    out += n > 3 ? s[i] + "*" + n.toString(36) + "*" : s.slice(i, j);
+    i = j;
+  }
+  return out;
+}
+function unrle(s){
+  let out = "";
+  for (let i = 0; i < s.length;){
+    const ch = s[i];
+    if (s[i+1] === "*"){
+      const end = s.indexOf("*", i + 2);
+      if (end < 0) return out + ch;
+      const n = parseInt(s.slice(i + 2, end), 36);
+      if (!(n > 0) || n > 5000) return out;
+      out += ch.repeat(n);
+      i = end + 1;
+    } else { out += ch; i++; }
+  }
+  return out;
+}
+function buildReport(){
+  const sc = computeScore();
+  const rep = {v:1, t: Date.now(), days:{}, sc:{total:sc.total, p:sc.parts.map(p=>p.pts)}, l:{}};
+  const days = loadJson("dt-days", {});
+  for (let i = 0; i < 14; i++){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const s = dateStr(d);
+    if (days[s]) rep.days[s] = days[s];
+  }
+  LESSONS.forEach(les=>{
+    const cards = lessonCards(les);
+    const map = srsLoad(les.id);
+    let bs = "", fs = "", any = false;
+    cards.forEach(c=>{
+      const st = map[c.de];
+      if (st){ any = true; bs += String(Math.min(9, st.b || 0)); fs += String(Math.min(9, st.f || 0)); }
+      else { bs += "-"; fs += "-"; }
+    });
+    if (any) rep.l[les.id] = {b: rle(bs), f: rle(fs), h: hashLesson(cards)};
+  });
+  return rep;
+}
+document.getElementById("btnShare").onclick = async ()=>{
+  const url = SITE_URL + "#r=" + b64uEncode(JSON.stringify(buildReport()));
+  if (navigator.share){
+    try{ await navigator.share({title: "Отчёт Deutsch-Trainer", url: url}); return; }
+    catch(e){ if (e && e.name === "AbortError") return; }
+  }
+  try{
+    await navigator.clipboard.writeText(url);
+    alert("Ссылка-отчёт скопирована! Отправь её папе в мессенджере.");
+  }catch(e){
+    prompt("Скопируй эту ссылку и отправь папе:", url);
+  }
+};
+const PART_META = [["Регулярность",15],["Знание слов",20],["Успешность",10],["Игры и диалоги",5]];
+function renderParentReport(enc){
+  let rep = null;
+  try{ rep = JSON.parse(b64uDecode(enc)); }catch(e){}
+  if (!rep || rep.v !== 1 || !rep.sc || typeof rep.sc.total !== "number" || !Array.isArray(rep.sc.p) || typeof rep.t !== "number"){
+    renderHome();
+    setTimeout(()=>alert("Не получилось открыть отчёт: ссылка обрезана или повреждена. Попроси отправить отчёт ещё раз (пересылать лучше как ссылку, а не как текст)."), 100);
+    return;
+  }
+  try{
+  document.getElementById("view-home").hidden = true;
+  document.getElementById("view-report").hidden = false;
+  const d = new Date(rep.t);
+  document.getElementById("repDate").textContent = "Отчёт создан " +
+    String(d.getDate()).padStart(2,"0") + "." + String(d.getMonth()+1).padStart(2,"0") + "." + d.getFullYear() +
+    " в " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0") + " на устройстве, где идут занятия";
+  document.getElementById("repNum").textContent = rep.sc.total + " / 50";
+  document.getElementById("repLabel").textContent = scoreLabel(rep.sc.total);
+  const parts = document.getElementById("repParts");
+  parts.innerHTML = "";
+  PART_META.forEach((pm, i)=>{
+    const pts = (rep.sc.p && rep.sc.p[i]) || 0;
+    const r = document.createElement("div");
+    r.className = "sc-row";
+    r.innerHTML = '<span class="sc-name"></span><span class="sc-bar"><span class="sc-fill"></span></span><span class="sc-pts"></span>';
+    r.querySelector(".sc-name").textContent = pm[0];
+    r.querySelector(".sc-fill").style.width = Math.min(100, pts/pm[1]*100) + "%";
+    r.querySelector(".sc-pts").textContent = pts + "/" + pm[1];
+    parts.appendChild(r);
+  });
+  const dayKeys = Object.keys(rep.days || {}).sort().reverse();
+  document.getElementById("repDays").textContent = dayKeys.length
+    ? dayKeys.map(k=>k.slice(8,10) + "." + k.slice(5,7) + " — " + rep.days[k] + " ответов").join(" · ")
+    : "За последние две недели занятий не было.";
+  let sumLearned = 0, sumTotal = 0;
+  const box = document.getElementById("repLessons");
+  box.innerHTML = "";
+  LESSONS.forEach(les=>{
+    const cards = lessonCards(les);
+    const st = (rep.l || {})[les.id];
+    const el = document.createElement("div");
+    el.className = "lcard";
+    el.style.cursor = "default";
+    el.innerHTML = '<div class="lt"></div><div class="ls"></div>';
+    el.querySelector(".lt").textContent = les.title;
+    if (!st || !st.b){
+      sumTotal += cards.length;
+      el.querySelector(".ls").textContent = "Ещё не начинала";
+    } else {
+      const bStr = unrle(st.b), fStr = unrle(st.f);
+      const sameVersion = (st.h === hashLesson(cards)) && (bStr.length === cards.length);
+      sumTotal += bStr.length;
+      let learned = 0, working = 0, hard = 0, unseen = 0;
+      const weak = [];
+      for (let i = 0; i < bStr.length; i++){
+        const b = bStr[i];
+        if (b === "-"){ unseen++; continue; }
+        const bn = parseInt(b, 10);
+        const fn = parseInt(fStr[i], 10) || 0;
+        if (bn >= 3) learned++;
+        else if (bn >= 1) working++;
+        else hard++;
+        if (sameVersion && fn > 0) weak.push({c: cards[i], fn: fn});
+      }
+      sumLearned += learned;
+      el.querySelector(".ls").textContent =
+        "🧠 выучено надолго: " + learned + " · 📗 в работе: " + working +
+        " · 🔴 пока не даются: " + hard + " · не тронуто: " + unseen + " (из " + bStr.length + ")";
+      if (weak.length){
+        weak.sort((a, b)=>b.fn - a.fn);
+        const top = weak.slice(0, 8);
+        const w = document.createElement("div");
+        w.className = "weak";
+        w.textContent = "Трудные: ";
+        top.forEach((x, j)=>{
+          const b = document.createElement("b");
+          b.textContent = x.c.de;
+          w.appendChild(b);
+          w.appendChild(document.createTextNode(" (" + x.c.ru + ", ошибок: " + x.fn + ")" + (j < top.length-1 ? ", " : "")));
+        });
+        el.appendChild(w);
+      }
+      if (!sameVersion){
+        const n = document.createElement("div");
+        n.className = "weak";
+        n.textContent = "⚠ Отчёт сделан на другой версии тренажёра — показаны только итоговые цифры, без списка слов.";
+        el.appendChild(n);
+      }
+    }
+    box.appendChild(el);
+  });
+  document.getElementById("repTotals").textContent = "Всего выучено надолго: " + sumLearned + " из " + sumTotal + " слов и фраз курса.";
+  }catch(e){
+    document.getElementById("view-report").hidden = true;
+    document.getElementById("view-home").hidden = false;
+    renderHome();
+    setTimeout(()=>alert("Отчёт повреждён — открыт обычный тренажёр. Попроси отправить отчёт ещё раз."), 100);
+  }
+}
+document.getElementById("btnOpenTrainer").onclick = ()=>{ location.hash = ""; location.reload(); };
+window.addEventListener("hashchange", ()=>location.reload());
+
+const repMatch = location.hash.match(/^#r=([A-Za-z0-9\-_]+)/);
+if (repMatch) renderParentReport(repMatch[1]); else renderHome();
 </script>
 </body>
 </html>
